@@ -10,11 +10,16 @@ import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
+import com.clase.engenios_manuelimdbapp.R;
 import com.clase.engenios_manuelimdbapp.databinding.FragmentSlideshowBinding;
+import com.google.android.material.navigation.NavigationView;
 
 public class SlideshowFragment extends Fragment {
 
-    private FragmentSlideshowBinding binding;
+    private String userName="";
+    private String userEmail="";
+    private String userPhotoUrl="";
+    private FragmentSlideshowBinding binding=null;
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
@@ -24,8 +29,17 @@ public class SlideshowFragment extends Fragment {
         binding = FragmentSlideshowBinding.inflate(inflater, container, false);
         View root = binding.getRoot();
 
-        final TextView textView = binding.textSlideshow;
-        slideshowViewModel.getText().observe(getViewLifecycleOwner(), textView::setText);
+        NavigationView navigationView = getActivity().findViewById(R.id.nav_view);
+        View headerView = navigationView.getHeaderView(0);
+        TextView userNameTextView = headerView.findViewById(R.id.txtUser);
+        TextView userEmailTextView = headerView.findViewById(R.id.txtCorreo);
+
+        userName = userNameTextView.getText().toString();
+        userEmail = userEmailTextView.getText().toString();
+
+        TextView textView = binding.textSlideshow;
+        textView.setText("Welcome, User"  + " (" + userEmail + ")");
+
         return root;
     }
 

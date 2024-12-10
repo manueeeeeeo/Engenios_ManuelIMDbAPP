@@ -52,4 +52,5 @@ dependencies {
     implementation ("com.google.firebase:firebase-auth:22.1.1")
     implementation ("com.google.android.gms:play-services-auth:20.6.0")
     implementation ("androidx.activity:activity-ktx:1.7.0")
+    implementation ("com.squareup.picasso:picasso:2.8")
 }
