@@ -6,6 +6,8 @@ import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
@@ -29,6 +31,7 @@ public class Inicio extends AppCompatActivity {
     private FirebaseAuth auth=null; // Variable controlar la autenticación de firebase
     private SignInButton signInButton=null; // Botón para iniciar sesión con google
     private GoogleSignInClient googleSignInClient=null;
+    private ActivityResultLauncher<Intent> signInLauncher;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -58,14 +61,31 @@ public class Inicio extends AppCompatActivity {
                 .build();
 
         googleSignInClient = GoogleSignIn.getClient(this, googleSignInOptions);
+
+        // Configuro el ActivityResultLauncher para manejar los resultados
+        signInLauncher = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    if (result.getResultCode() == RESULT_OK) {
+                        Intent data = result.getData();
+                        Task<GoogleSignInAccount> task = GoogleSignIn.getSignedInAccountFromIntent(data);
+                        try {
+                            GoogleSignInAccount account = task.getResult(ApiException.class);
+                            firebaseAuthWithGoogle(account);
+                        } catch (ApiException e) {
+                            Log.w("Inicio", "Google sign-in failed", e);
+                        }
+                    }
+                }
+        );
     }
 
     private void signInWithGoogle() {
         Intent signInIntent = googleSignInClient.getSignInIntent();
-        startActivityForResult(signInIntent, RC_SIGN_IN);
+        signInLauncher.launch(signInIntent);
     }
 
-    @Override
+    /*@Override
     public void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
 
@@ -79,7 +99,7 @@ public class Inicio extends AppCompatActivity {
                 Log.w("Inicio", "Google sign-in failed", e);
             }
         }
-    }
+    }*/
 
     // Autenticación con Firebase
     private void firebaseAuthWithGoogle(GoogleSignInAccount account) {
