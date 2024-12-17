@@ -48,8 +48,8 @@ public class MovieDetailsActivity extends AppCompatActivity {
     Toast mensajeToast = null;
     private ActivityResultLauncher<Intent> contactPickerLauncher;
     private String selectedContactNumber;
-    private String movieMessage = "";
-
+    private String movieMessage = "Mira!! Está película te puede gustar ";
+    MovieOverviewResponse movie = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -86,7 +86,7 @@ public class MovieDetailsActivity extends AppCompatActivity {
 
         imdbApiService = retrofit.create(IMDBApiService.class);
 
-        MovieOverviewResponse movie = getIntent().getParcelableExtra("movieDetails");
+        movie = getIntent().getParcelableExtra("movieDetails");
         if (movie != null) {
             loadMovieDetails(movie);
         }
@@ -97,7 +97,7 @@ public class MovieDetailsActivity extends AppCompatActivity {
                     if (result.getResultCode() == RESULT_OK && result.getData() != null) {
                         Uri contactUri = result.getData().getData();
                         if (contactUri != null) {
-                            showToast("Contacto seleccionado: " + contactUri.toString());
+                            //showToast("Contacto seleccionado: " + contactUri.toString());
                             extractPhoneNumber(contactUri);
                         }
                     } else {
@@ -144,37 +144,60 @@ public class MovieDetailsActivity extends AppCompatActivity {
     }
 
     private void extractPhoneNumber(Uri contactUri) {
-        String[] projection = {ContactsContract.CommonDataKinds.Phone.NUMBER};
+        String contactId = null;
 
-        try (Cursor cursor = getContentResolver().query(contactUri, projection, null, null, null)) {
+        try (Cursor cursor = getContentResolver().query(contactUri,
+                new String[]{ContactsContract.Contacts._ID}, null, null, null)) {
             if (cursor != null && cursor.moveToFirst()) {
-                int numberIndex = cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER);
-                selectedContactNumber = cursor.getString(numberIndex);
+                int idIndex = cursor.getColumnIndex(ContactsContract.Contacts._ID);
+                contactId = cursor.getString(idIndex);
+            }
+        }
 
-                if (selectedContactNumber != null && !selectedContactNumber.trim().isEmpty()) {
-                    showToast("Número seleccionado: " + selectedContactNumber);
+        if (contactId != null) {
+            String[] projection = {ContactsContract.CommonDataKinds.Phone.NUMBER};
+            String selection = ContactsContract.CommonDataKinds.Phone.CONTACT_ID + " = ?";
+            String[] selectionArgs = {contactId};
 
-                    if (ContextCompat.checkSelfPermission(this, Manifest.permission.SEND_SMS)
-                            != PackageManager.PERMISSION_GRANTED) {
-                        ActivityCompat.requestPermissions(
-                                this,
-                                new String[]{Manifest.permission.SEND_SMS},
-                                SEND_SMS_PERMISSION_REQUEST_CODE
-                        );
+            try (Cursor phoneCursor = getContentResolver().query(
+                    ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
+                    projection,
+                    selection,
+                    selectionArgs,
+                    null)) {
+
+                if (phoneCursor != null && phoneCursor.moveToFirst()) {
+                    int numberIndex = phoneCursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER);
+                    selectedContactNumber = phoneCursor.getString(numberIndex);
+
+                    if (selectedContactNumber != null && !selectedContactNumber.trim().isEmpty()) {
+                        showToast("Número seleccionado: " + selectedContactNumber);
+
+                        if (ContextCompat.checkSelfPermission(this, Manifest.permission.SEND_SMS)
+                                != PackageManager.PERMISSION_GRANTED) {
+                            ActivityCompat.requestPermissions(
+                                    this,
+                                    new String[]{Manifest.permission.SEND_SMS},
+                                    SEND_SMS_PERMISSION_REQUEST_CODE
+                            );
+                        } else {
+                            openSmsApp();
+                        }
                     } else {
-                        openSmsApp();
+                        showToast("El contacto no tiene un número de teléfono válido.");
                     }
                 } else {
-                    showToast("El contacto no tiene un número de teléfono válido.");
+                    showToast("No se pudo obtener el número de teléfono.");
                 }
-            } else {
-                showToast("No se pudo obtener el número de teléfono.");
+            } catch (Exception e) {
+                e.printStackTrace();
+                showToast("Error al obtener el número del contacto.");
             }
-        } catch (Exception e) {
-            e.printStackTrace();
-            showToast("Error al obtener el número del contacto.");
+        } else {
+            showToast("No se pudo obtener el ID del contacto.");
         }
     }
+
 
 
     private void openSmsApp() {
@@ -182,7 +205,7 @@ public class MovieDetailsActivity extends AppCompatActivity {
             try {
                 Intent smsIntent = new Intent(Intent.ACTION_SENDTO);
                 smsIntent.setData(Uri.parse("smsto:" + Uri.encode(selectedContactNumber)));
-                smsIntent.putExtra("sms_body", "¡Mira esta película! " + movieMessage);
+                smsIntent.putExtra("sms_body", movieMessage+movie.getTitle()+" con valoración: "+movie.getRanking());
                 startActivity(smsIntent);  // Lanzamos la actividad para enviar el SMS
             } catch (Exception e) {
                 Log.e("SMS_INTENT_ERROR", "Error al abrir la app de SMS", e);
