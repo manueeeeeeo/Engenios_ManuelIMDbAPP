@@ -7,6 +7,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
@@ -22,6 +23,7 @@ public class MovieAdapters extends RecyclerView.Adapter<MovieAdapters.MovieViewH
 
     private Context context;
     private List<MovieOverviewResponse> movieList;
+    private Toast mensajeToast = null;
 
     public MovieAdapters(Context context, List<MovieOverviewResponse> movieList) {
         this.context = context;
@@ -57,6 +59,14 @@ public class MovieAdapters extends RecyclerView.Adapter<MovieAdapters.MovieViewH
                 context.startActivity(intent);
             }
         });
+
+        holder.itemView.setOnLongClickListener(new View.OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View view) {
+                showToast("Película "+movie.getTitle()+" agregada a favoritas");
+                return true;
+            }
+        });
     }
 
     @Override
@@ -71,5 +81,21 @@ public class MovieAdapters extends RecyclerView.Adapter<MovieAdapters.MovieViewH
             super(itemView);
             movieImageView = itemView.findViewById(R.id.movieImageView);
         }
+    }
+
+    /**
+     * @param mensaje
+     * Método para ir matando los Toast y mostrar todos en el mismo para evitar
+     * colas de Toasts y que se ralentice el dispositivo*/
+    public void showToast(String mensaje){
+        // Comprobamos si existe algun toast cargado en el toast de la variable global
+        if (mensajeToast != null) { // En caso de que si que exista
+            mensajeToast.cancel(); // Le cancelamos, es decir le "matamos"
+        }
+
+        // Creamos un nuevo Toast con el mensaje que nos dan de argumento en el método
+        mensajeToast = Toast.makeText(context, mensaje, Toast.LENGTH_SHORT);
+        // Mostramos dicho Toast
+        mensajeToast.show();
     }
 }
