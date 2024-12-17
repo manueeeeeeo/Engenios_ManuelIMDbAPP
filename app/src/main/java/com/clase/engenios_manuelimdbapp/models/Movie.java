@@ -1,14 +1,27 @@
 package com.clase.engenios_manuelimdbapp.models;
 
+import android.os.Parcel;
+import android.os.Parcelable;
+
+import androidx.annotation.NonNull;
+
 public class Movie {
     private String id;
     private String title;
-    private String image;
-    private String year;
-    private String description; // Descripción o sinopsis
-    private double rating; // Calificación (puedes ajustar el tipo según la API)
+    private String originalTitle;
+    private String imageUrl;
+    private int releaseYear;
 
-    // Getters y setters
+    public Movie() {}
+
+    public Movie(String id, String title, String originalTitle, String imageUrl, int releaseYear) {
+        this.id = id;
+        this.title = title;
+        this.originalTitle = originalTitle;
+        this.imageUrl = imageUrl;
+        this.releaseYear = releaseYear;
+    }
+
     public String getId() {
         return id;
     }
@@ -25,35 +38,73 @@ public class Movie {
         this.title = title;
     }
 
-    public String getImage() {
-        return image;
+    public String getOriginalTitle() {
+        return originalTitle;
     }
 
-    public void setImage(String image) {
-        this.image = image;
+    public void setOriginalTitle(String originalTitle) {
+        this.originalTitle = originalTitle;
     }
 
-    public String getYear() {
-        return year;
+    public String getImageUrl() {
+        return imageUrl;
     }
 
-    public void setYear(String year) {
-        this.year = year;
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
     }
 
-    public String getDescription() {
-        return description;
+    public int getReleaseYear() {
+        return releaseYear;
     }
 
-    public void setDescription(String description) {
-        this.description = description;
+    public void setReleaseYear(int releaseYear) {
+        this.releaseYear = releaseYear;
     }
 
-    public double getRating() {
-        return rating;
+    public void updateFromNode(PopularMovieResponse.Node node) {
+        this.title = node.getTitleText().getText();
+
+        this.originalTitle = node.getTitleText().getText();
+
+        this.imageUrl = node.getPrimaryImage().getUrl();
+
+        this.releaseYear = 0;
     }
 
-    public void setRating(double rating) {
-        this.rating = rating;
+    public static class TitleText {
+        private String text;
+
+        public String getText() {
+            return text;
+        }
+
+        public void setText(String text) {
+            this.text = text;
+        }
+    }
+
+    public static class PrimaryImage {
+        private String url;
+
+        public String getUrl() {
+            return url;
+        }
+
+        public void setUrl(String url) {
+            this.url = url;
+        }
+    }
+
+    public static class MeterRanking {
+        private int currentRank;
+
+        public int getCurrentRank() {
+            return currentRank;
+        }
+
+        public void setCurrentRank(int currentRank) {
+            this.currentRank = currentRank;
+        }
     }
 }

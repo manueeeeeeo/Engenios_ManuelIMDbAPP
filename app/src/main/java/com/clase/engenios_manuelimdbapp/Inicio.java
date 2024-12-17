@@ -28,28 +28,23 @@ import com.google.firebase.auth.GoogleAuthProvider;
 
 public class Inicio extends AppCompatActivity {
     private static final int RC_SIGN_IN = 9001;
-    private FirebaseAuth auth=null; // Variable controlar la autenticación de firebase
-    private SignInButton signInButton=null; // Botón para iniciar sesión con google
+    private FirebaseAuth auth=null;
+    private SignInButton signInButton=null;
     private GoogleSignInClient googleSignInClient=null;
-    private ActivityResultLauncher<Intent> signInLauncher;
+    private ActivityResultLauncher<Intent> signInLauncher=null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_inicio);
 
-        // Inicializo el Firebase Auth
         auth = FirebaseAuth.getInstance();
 
-        // Configuro el botón de inicio de sesión
         signInButton = findViewById(R.id.sign_in_button);
-        // Llamo al método para poder cambiar el texto del botón de inicio de sesión
         cambiarLetrasBoton();
-        // Establezco un evento para cuando toco el botón de inicio
         signInButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                // Llamo al método para iniciar sesión en Google
                 signInWithGoogle();
             }
         });
@@ -62,7 +57,6 @@ public class Inicio extends AppCompatActivity {
 
         googleSignInClient = GoogleSignIn.getClient(this, googleSignInOptions);
 
-        // Configuro el ActivityResultLauncher para manejar los resultados
         signInLauncher = registerForActivityResult(
                 new ActivityResultContracts.StartActivityForResult(),
                 result -> {
@@ -85,7 +79,6 @@ public class Inicio extends AppCompatActivity {
         signInLauncher.launch(signInIntent);
     }
 
-    // Autenticación con Firebase
     private void firebaseAuthWithGoogle(GoogleSignInAccount account) {
         AuthCredential credential = GoogleAuthProvider.getCredential(account.getIdToken(), null);
         auth.signInWithCredential(credential)
