@@ -51,12 +51,6 @@ public class SlideshowFragment extends Fragment {
             }
         });
 
-        /*TextView userNameTextView = headerView.findViewById(R.id.txtUser);
-        TextView userEmailTextView = headerView.findViewById(R.id.txtCorreo);
-
-        userName = userNameTextView.getText().toString();
-        userEmail = userEmailTextView.getText().toString();*/
-
 
         return root;
     }

@@ -8,6 +8,7 @@
     tools:context=".MovieListActivity">
 
     <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rec"
         android:layout_width="379dp"
         android:layout_height="694dp"
         app:layout_constraintBottom_toBottomOf="parent"

@@ -14,17 +14,18 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.clase.engenios_manuelimdbapp.MovieDetailsActivity;
 import com.clase.engenios_manuelimdbapp.R;
+import com.clase.engenios_manuelimdbapp.models.FavoriteMoviesDatabase;
 import com.clase.engenios_manuelimdbapp.models.MovieOverviewResponse;
 import com.squareup.picasso.Picasso;
 
 import java.util.List;
 
 public class MovieAdapters extends RecyclerView.Adapter<MovieAdapters.MovieViewHolder> {
+    private Context context; // Contexto de la actividad
+    private List<MovieOverviewResponse> movieList; // Lista de obtención de las peliculas
+    private Toast mensajeToast = null; // Toast para el manejo de los mensajes
 
-    private Context context;
-    private List<MovieOverviewResponse> movieList;
-    private Toast mensajeToast = null;
-
+    // Constructor con los parametros
     public MovieAdapters(Context context, List<MovieOverviewResponse> movieList) {
         this.context = context;
         this.movieList = movieList;
@@ -39,14 +40,17 @@ public class MovieAdapters extends RecyclerView.Adapter<MovieAdapters.MovieViewH
 
     @Override
     public void onBindViewHolder(@NonNull MovieViewHolder holder, int position) {
+        // Obtengo la pelicula para ponerla en el adaptador
         MovieOverviewResponse movie = movieList.get(position);
 
+        // Uso Picasso para cargar la imagen que obtengo de la consulta a la API
         Picasso.get()
-                .load(movie.getImageUrl())
-                .placeholder(R.drawable.baseline_autorenew_24)
-                .error(R.drawable.por_defecto)
-                .into(holder.movieImageView);
+                .load(movie.getImageUrl()) // La url de la imagen
+                .placeholder(R.drawable.baseline_autorenew_24) // El placeholder de la foto
+                .error(R.drawable.por_defecto) // Foto si tenemos un error
+                .into(holder.movieImageView); // El elemento donde se carga la foto
 
+        // Evento cuando clicko en la portada de la pelicula
         holder.itemView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -60,10 +64,26 @@ public class MovieAdapters extends RecyclerView.Adapter<MovieAdapters.MovieViewH
             }
         });
 
+        // Establezco un evento en la portada para cuando hagan un on click largo
         holder.itemView.setOnLongClickListener(new View.OnLongClickListener() {
             @Override
             public boolean onLongClick(View view) {
-                showToast("Película "+movie.getTitle()+" agregada a favoritas");
+                FavoriteMoviesDatabase database = new FavoriteMoviesDatabase(context);
+
+                String movieId = movie.getId();
+                String urlIm = movie.getImageUrl();
+
+                if (!database.isFavorite(movieId)) {
+                    long result = database.insertFavorite(movieId, urlIm); // Usar el método de inserción
+                    if (result != -1) {
+                        showToast("Película " + movie.getTitle() + " agregada a favoritos");
+                    } else {
+                        showToast("Error al agregar la película a favoritos");
+                    }
+                } else {
+                    showToast("La película ya está en favoritos");
+                }
+
                 return true;
             }
         });

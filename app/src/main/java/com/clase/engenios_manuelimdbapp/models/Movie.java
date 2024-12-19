@@ -1,10 +1,5 @@
 package com.clase.engenios_manuelimdbapp.models;
 
-import android.os.Parcel;
-import android.os.Parcelable;
-
-import androidx.annotation.NonNull;
-
 public class Movie {
     private String id;
     private String title;
@@ -12,7 +7,8 @@ public class Movie {
     private String imageUrl;
     private int releaseYear;
 
-    public Movie() {}
+    public Movie() {
+    }
 
     public Movie(String id, String title, String originalTitle, String imageUrl, int releaseYear) {
         this.id = id;

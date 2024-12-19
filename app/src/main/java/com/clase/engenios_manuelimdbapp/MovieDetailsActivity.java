@@ -30,6 +30,8 @@ import com.clase.engenios_manuelimdbapp.models.MovieOverviewResponse;
 import com.google.gson.Gson;
 import com.squareup.picasso.Picasso;
 
+import java.util.concurrent.TimeUnit;
+
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import retrofit2.Call;
@@ -38,18 +40,22 @@ import retrofit2.Response;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
+/**
+ * @author Manuel
+ * @version  1.0*/
+
 public class MovieDetailsActivity extends AppCompatActivity {
-    private ImageView imagenPeli;
-    private TextView titleView, valora, fecha, descrip;
-    private IMDBApiService imdbApiService;
-    private Button enviarSms;
-    private static final int CONTACTS_PERMISSION_REQUEST_CODE = 1;
-    private static final int SEND_SMS_PERMISSION_REQUEST_CODE = 2;
-    Toast mensajeToast = null;
-    private ActivityResultLauncher<Intent> contactPickerLauncher;
-    private String selectedContactNumber;
-    private String movieMessage = "Mira!! Está película te puede gustar ";
-    MovieOverviewResponse movie = null;
+    private ImageView imagenPeli = null; // Variable de la película para cargar la portada
+    private TextView titleView = null, valora = null, fecha = null, descrip = null; // Textview para cargar la información
+    private IMDBApiService imdbApiService = null; // Instacia del servicio de la API
+    private Button enviarSms = null; // Variable del botón para cuando queramos compartir una película por SMS
+    private static final int CONTACTS_PERMISSION_REQUEST_CODE = 1; // Permiso de acceso a los contactos
+    private static final int SEND_SMS_PERMISSION_REQUEST_CODE = 2; // Permiso de acceso a enviar SMS
+    Toast mensajeToast = null; // Variable para controlar los toast de la aplicación
+    private ActivityResultLauncher<Intent> contactPickerLauncher = null; // Variable para
+    private String selectedContactNumber = null; // Variable en donde guardo el número al que le voy a enviar la película
+    private String movieMessage = "Mira!! Está película te puede gustar "; // Mensaje que completaré después y enviaré al contacto
+    MovieOverviewResponse movie = null; // Objeto del tipo MovieOverview
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -62,6 +68,7 @@ public class MovieDetailsActivity extends AppCompatActivity {
             return insets;
         });
 
+        // Obtengo todos los objetos de la interfaz de está actividad
         imagenPeli = (ImageView) findViewById(R.id.imagenPeli);
         titleView = (TextView) findViewById(R.id.txtTituloPeli);
         fecha = (TextView) findViewById(R.id.txtFe);
@@ -76,7 +83,10 @@ public class MovieDetailsActivity extends AppCompatActivity {
                             .addHeader("X-RapidAPI-Host", "imdb-com.p.rapidapi.com")
                             .build();
                     return chain.proceed(newRequest);
-                }).build();
+                })
+                .connectTimeout(30, TimeUnit.SECONDS)
+                .readTimeout(30, TimeUnit.SECONDS)
+                .build();
 
         Retrofit retrofit = new Retrofit.Builder()
                 .baseUrl("https://imdb-com.p.rapidapi.com/")
@@ -86,8 +96,11 @@ public class MovieDetailsActivity extends AppCompatActivity {
 
         imdbApiService = retrofit.create(IMDBApiService.class);
 
+        // Obtengo el parceable que le pasé, para ahora cargar la información de la pelicula
         movie = getIntent().getParcelableExtra("movieDetails");
-        if (movie != null) {
+        // Compruebo que recibo algo
+        if (movie != null) { // En caso de que si que reciba algo
+            // Llamo al método para cargar los detalles de la película
             loadMovieDetails(movie);
         }
 
@@ -115,6 +128,7 @@ public class MovieDetailsActivity extends AppCompatActivity {
             );
         }
 
+        // Establezco un evento para cuando hagamos un click en el botón de compartir por sms
         enviarSms.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -122,8 +136,6 @@ public class MovieDetailsActivity extends AppCompatActivity {
                         MovieDetailsActivity.this,
                         Manifest.permission.READ_CONTACTS
                 ) != PackageManager.PERMISSION_GRANTED) {
-
-                    // Solicita el permiso, sin importar el resultado del shouldShowRequestPermissionRationale
                     ActivityCompat.requestPermissions(
                             MovieDetailsActivity.this,
                             new String[]{Manifest.permission.READ_CONTACTS},
@@ -138,11 +150,16 @@ public class MovieDetailsActivity extends AppCompatActivity {
         });
     }
 
+    /**
+     * Método para */
     private void openContactPicker() {
         Intent intent = new Intent(Intent.ACTION_PICK, ContactsContract.Contacts.CONTENT_URI);
         contactPickerLauncher.launch(intent);
     }
 
+    /**
+     * @param contactUri
+     * Método para */
     private void extractPhoneNumber(Uri contactUri) {
         String contactId = null;
 
@@ -198,8 +215,8 @@ public class MovieDetailsActivity extends AppCompatActivity {
         }
     }
 
-
-
+    /**
+     * Método para*/
     private void openSmsApp() {
         if (selectedContactNumber != null && !selectedContactNumber.trim().isEmpty()) {
             try {
@@ -243,10 +260,12 @@ public class MovieDetailsActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * @param movie
+     * Método para */
     private void loadMovieDetails(MovieOverviewResponse movie) {
         titleView.setText(movie.getTitle());
-        fecha.setText("Release Date: "+movie.getYear());
-        valora.setText("Rating: "+movie.getRanking());
+        fecha.setText("Release Date: " + movie.getYear());
         Picasso.get()
                 .load(movie.getImageUrl())
                 .placeholder(R.drawable.baseline_autorenew_24)
@@ -258,28 +277,46 @@ public class MovieDetailsActivity extends AppCompatActivity {
             @Override
             public void onResponse(Call<MovieOverviewResponse> call, Response<MovieOverviewResponse> response) {
                 Log.d("API_RESPONSE", "Código HTTP: " + response.code());
-                if (response.isSuccessful() && response.body() != null) {
-                    Log.d("API_RESPONSE", "Respuesta completa: " + new Gson().toJson(response.body()));
+                Log.d("API_RAW_RESPONSE", response.body().toString());
 
-                    String description = response.body().getDescription();
-                    if (description != null && !description.isEmpty()) {
-                        descrip.setText(description);
-                    } else {
-                        descrip.setText("Descripción no disponible.");
+                if (response.isSuccessful() && response.body() != null) {
+                    Log.d("API_RAW_RESPONSE", response.raw().toString()); // JSON crudo
+                    Log.d("API_RAW_BODY", response.body() != null ? response.body().toString() : "Body es null");
+                    try {
+                        String plotText = response.body().getPlot() != null &&
+                                response.body().getPlot().getPlotText() != null &&
+                                response.body().getPlot().getPlotText().getPlainText() != null
+                                ? response.body().getPlot().getPlotText().getPlainText()
+                                : "Descripción no disponible.";
+
+                        descrip.setText(plotText);
+
+                        double rating = response.body().getRatingsSummary() != null
+                                ? response.body().getRatingsSummary().getAggregateRating()
+                                : 0;
+
+                        valora.setText(rating > 0 ? "Rating: " + rating : "Rating no disponible.");
+                    } catch (Exception e) {
+                        Log.e("API_PARSE_ERROR", "Error procesando la respuesta: " + e.getMessage());
+                        descrip.setText("Error al cargar la descripción.");
+                        valora.setText("Error al cargar el rating.");
                     }
                 } else {
-                    Log.e("API_ERROR", "Respuesta vacía o incorrecta. Código: " + response.code());
+                    Log.e("API_ERROR", "Respuesta no exitosa. Código: " + response.code());
                     descrip.setText("Descripción no disponible.");
+                    valora.setText("Rating no disponible.");
                 }
             }
 
-
             @Override
             public void onFailure(Call<MovieOverviewResponse> call, Throwable t) {
+                Log.e("API_FAILURE", "Error: " + t.getMessage());
                 descrip.setText("Error al cargar la descripción.");
+                valora.setText("Error al cargar el rating.");
             }
         });
     }
+
 
     /**
      * @param mensaje

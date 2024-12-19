@@ -102,7 +102,6 @@ public class HomeFragment extends Fragment {
                             MovieOverviewResponse movie = new MovieOverviewResponse();
                             movie.setTitle(node.getTitleText().getText());
                             movie.setImageUrl(node.getPrimaryImage().getUrl());
-                            movie.setRanking(String.valueOf(node.getMeterRanking().getCurrentRank()));
                             movie.setYear(node.getReleaseDate().toString());
                             movie.setId(node.getId());
 

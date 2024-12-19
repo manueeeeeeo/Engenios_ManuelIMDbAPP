@@ -6,15 +6,29 @@ import android.os.Parcelable;
 import com.google.gson.annotations.SerializedName;
 
 public class MovieOverviewResponse implements Parcelable {
+    @SerializedName("id")
     private String id;
+
+    @SerializedName("title")
     private String title;
+
+    @SerializedName("year")
     private String year;
+
+    @SerializedName("imageUrl")
     private String imageUrl;
+
+    @SerializedName("ranking")
     private String ranking;
-    @SerializedName("overview")
-    private String description;
+
+    @SerializedName("plot")
+    private Plot plot; // Campo para la descripción
+
+    @SerializedName("ratingsSummary")
+    private RatingsSummary ratingsSummary; // Campo para la valoración
 
     public MovieOverviewResponse() {}
+
     public MovieOverviewResponse(String id, String title, String year, String imageUrl, String ranking) {
         this.id = id;
         this.title = title;
@@ -63,12 +77,20 @@ public class MovieOverviewResponse implements Parcelable {
         this.ranking = ranking;
     }
 
-    public String getDescription() {
-        return description;
+    public Plot getPlot() {
+        return plot;
     }
 
-    public void setDescription(String description) {
-        this.description = description;
+    public void setPlot(Plot plot) {
+        this.plot = plot;
+    }
+
+    public RatingsSummary getRatingsSummary() {
+        return ratingsSummary;
+    }
+
+    public void setRatingsSummary(RatingsSummary ratingsSummary) {
+        this.ratingsSummary = ratingsSummary;
     }
 
     @Override
@@ -104,4 +126,43 @@ public class MovieOverviewResponse implements Parcelable {
             return new MovieOverviewResponse[size];
         }
     };
+
+    public static class Plot {
+        @SerializedName("plotText")
+        private PlotText plotText;
+
+        public PlotText getPlotText() {
+            return plotText;
+        }
+
+        public void setPlotText(PlotText plotText) {
+            this.plotText = plotText;
+        }
+
+        public static class PlotText {
+            @SerializedName("plainText")
+            private String plainText;
+
+            public String getPlainText() {
+                return plainText;
+            }
+
+            public void setPlainText(String plainText) {
+                this.plainText = plainText;
+            }
+        }
+    }
+
+    public static class RatingsSummary {
+        @SerializedName("aggregateRating")
+        private double aggregateRating;
+
+        public double getAggregateRating() {
+            return aggregateRating;
+        }
+
+        public void setAggregateRating(double aggregateRating) {
+            this.aggregateRating = aggregateRating;
+        }
+    }
 }
