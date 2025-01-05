@@ -25,20 +25,8 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
-import com.clase.engenios_manuelimdbapp.api.IMDBApiService;
-import com.clase.engenios_manuelimdbapp.models.MovieOverviewResponse;
-import com.google.gson.Gson;
+import com.clase.engenios_manuelimdbapp.models.Movie;
 import com.squareup.picasso.Picasso;
-
-import java.util.concurrent.TimeUnit;
-
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
-import retrofit2.Retrofit;
-import retrofit2.converter.gson.GsonConverterFactory;
 
 /**
  * @author Manuel
@@ -47,15 +35,14 @@ import retrofit2.converter.gson.GsonConverterFactory;
 public class MovieDetailsActivity extends AppCompatActivity {
     private ImageView imagenPeli = null; // Variable de la película para cargar la portada
     private TextView titleView = null, valora = null, fecha = null, descrip = null; // Textview para cargar la información
-    private IMDBApiService imdbApiService = null; // Instacia del servicio de la API
     private Button enviarSms = null; // Variable del botón para cuando queramos compartir una película por SMS
     private static final int CONTACTS_PERMISSION_REQUEST_CODE = 1; // Permiso de acceso a los contactos
     private static final int SEND_SMS_PERMISSION_REQUEST_CODE = 2; // Permiso de acceso a enviar SMS
-    Toast mensajeToast = null; // Variable para controlar los toast de la aplicación
-    private ActivityResultLauncher<Intent> contactPickerLauncher = null; // Variable para
+    private Toast mensajeToast = null; // Variable para controlar los toast de la aplicación
+    private ActivityResultLauncher<Intent> contactPickerLauncher = null; // Variable para lanzar la actividad de elección de contacto y manejar el resultado
     private String selectedContactNumber = null; // Variable en donde guardo el número al que le voy a enviar la película
     private String movieMessage = "Mira!! Está película te puede gustar "; // Mensaje que completaré después y enviaré al contacto
-    MovieOverviewResponse movie = null; // Objeto del tipo MovieOverview
+    private Movie movie = null; // Objeto del tipo MovieOverview
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -76,51 +63,48 @@ public class MovieDetailsActivity extends AppCompatActivity {
         descrip = (TextView) findViewById(R.id.txtDescr);
         enviarSms = (Button) findViewById(R.id.btnCompartirSms);
 
-        OkHttpClient client = new OkHttpClient.Builder()
-                .addInterceptor(chain -> {
-                    Request newRequest = chain.request().newBuilder()
-                            .addHeader("X-RapidAPI-Key", "45157d396bmshf14702227e85da3p1ff7a9jsna860971b474a")
-                            .addHeader("X-RapidAPI-Host", "imdb-com.p.rapidapi.com")
-                            .build();
-                    return chain.proceed(newRequest);
-                })
-                .connectTimeout(30, TimeUnit.SECONDS)
-                .readTimeout(30, TimeUnit.SECONDS)
-                .build();
-
-        Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl("https://imdb-com.p.rapidapi.com/")
-                .client(client)
-                .addConverterFactory(GsonConverterFactory.create())
-                .build();
-
-        imdbApiService = retrofit.create(IMDBApiService.class);
-
         // Obtengo el parceable que le pasé, para ahora cargar la información de la pelicula
         movie = getIntent().getParcelableExtra("movieDetails");
         // Compruebo que recibo algo
         if (movie != null) { // En caso de que si que reciba algo
-            // Llamo al método para cargar los detalles de la película
-            loadMovieDetails(movie);
+            // Establezco el titulo de la película o serie al TextView asociado
+            titleView.setText(movie.getTitle());
+            // Establezco la fecha de publicación de la película o serie al TextView asociado
+            fecha.setText("Release Date: " +movie.getReleaseDate());
+            // Establezco la foto de portada de la película o serie con la libreria Picasso
+            Picasso.get()
+                    .load(movie.getPosterPath()) // Establezco la url que voy a descargar ka imagen
+                    .placeholder(R.drawable.baseline_autorenew_24) // Establezco el placeholder de la foto
+                    .into(imagenPeli); // Establezco el item donde vamos a cargar la foto
+            descrip.setText(movie.getDescripcion());
+            valora.setText(movie.getValoracion());
         }
 
+        // Procedo a configurar el Launcher para poder abrir otra actividad que en este caso será la de elección de un contacto
         contactPickerLauncher = registerForActivityResult(
+                // Defino la nueva actividad que voy a llamar para poder así obtener posibles resultados
                 new ActivityResultContracts.StartActivityForResult(),
                 result -> {
+                    // Compruebo si el código de proceso es el correcto y los datos que he cargado son distintos de nulo
                     if (result.getResultCode() == RESULT_OK && result.getData() != null) {
+                        // De ser así obtengo la uri del contacto elegido
                         Uri contactUri = result.getData().getData();
+                        // Compruebo si la Uri del contacto elegida es nula o no
                         if (contactUri != null) {
-                            //showToast("Contacto seleccionado: " + contactUri.toString());
+                            // En caso de que no sea nula, llamo al método para conseguir su número de telefono
                             extractPhoneNumber(contactUri);
                         }
-                    } else {
+                    } else { // En caso de que no pase el filtro
+                        // Lanzo un Toast al usuario avisandole de que no ha elegido ningun contacto
                         showToast("No se seleccionó ningún contacto");
                     }
                 }
         );
 
+        // Verifico si el usuario tiene los permisos de envio de sms ya activados o no
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.SEND_SMS)
-                != PackageManager.PERMISSION_GRANTED) {
+                != PackageManager.PERMISSION_GRANTED) { // En caso de que no tenga los permisos acceptados
+            // Procedo a mostrarle el dialogo para aceptar los permisos de envio de sms
             ActivityCompat.requestPermissions(
                     this,
                     new String[]{Manifest.permission.SEND_SMS},
@@ -132,18 +116,22 @@ public class MovieDetailsActivity extends AppCompatActivity {
         enviarSms.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                // Verifico si ya tiene el permiso de acceso a los contactos puesto
                 if (ContextCompat.checkSelfPermission(
                         MovieDetailsActivity.this,
                         Manifest.permission.READ_CONTACTS
-                ) != PackageManager.PERMISSION_GRANTED) {
+                ) != PackageManager.PERMISSION_GRANTED) { // En caso de que no lo tenga
+                    // Procedo a mostrarle el dialogo para que acepte los permisos de acceso a los contactos
                     ActivityCompat.requestPermissions(
                             MovieDetailsActivity.this,
                             new String[]{Manifest.permission.READ_CONTACTS},
                             CONTACTS_PERMISSION_REQUEST_CODE
                     );
 
-                } else {
+                } else { // En caso de ya tener los permisos de acceo a la lectura de contactos concedidos
+                    // Lanzamos un Toast avisando al usuario
                     showToast("Permisos de lectura de contactos ya concedidos");
+                    // Llamo al método para elegir al contacto al que le voy a enviar la película
                     openContactPicker();
                 }
             }
@@ -151,31 +139,49 @@ public class MovieDetailsActivity extends AppCompatActivity {
     }
 
     /**
-     * Método para */
+     * Método para establecer el intent mediante el cual vamos a poder ver todos nuestros
+     * contactos y elegir uno de ellos*/
     private void openContactPicker() {
+        // Creamos un intent estableciendo y especificando que vamos a mostrar una lista de contactos del usuario y que tiene que eelgir uno
         Intent intent = new Intent(Intent.ACTION_PICK, ContactsContract.Contacts.CONTENT_URI);
+        // Utilizamos el lanzaodr de intents para poder ejecutar el intent de antes y poder ver la lista de contactos
         contactPickerLauncher.launch(intent);
     }
 
     /**
      * @param contactUri
-     * Método para */
+     * Método en el que gracias al Uri del contacto puedo obtener el id del mismo y seguir filtrando
+     * todos los contactos hasta que encuentre uno con ese identificador, una vez encontrado procedo
+     * a poder obtener su número de telefono con otro cursor y otro filtro, una vez que tengo el número
+     * si ha salido bien y el número es valido, llamo al método desde el que abro la aplicación
+     * de sms con un Intent*/
     private void extractPhoneNumber(Uri contactUri) {
+        // Variable en donde guardo el id del contacto
         String contactId = null;
 
+        // Utilizo un try catch para poder controlar las excepciones
+        // Aquí lo que hago es utilizar un cursor para poder consultar el id del contacto
         try (Cursor cursor = getContentResolver().query(contactUri,
                 new String[]{ContactsContract.Contacts._ID}, null, null, null)) {
-            if (cursor != null && cursor.moveToFirst()) {
+            if (cursor != null && cursor.moveToFirst()) { // En caso de que el cursor no sea nulo y se pueda seguir moviendo
+                // Obtengo la posición de la columna que contiene el id del contacto
                 int idIndex = cursor.getColumnIndex(ContactsContract.Contacts._ID);
+                // Introduzco en la variable antes creada el valor del id del contacto
                 contactId = cursor.getString(idIndex);
             }
         }
 
-        if (contactId != null) {
+        // Compruebo si el id del contacto es correcto
+        if (contactId != null) { // En caso de que no sea nulo
+            // Establezco el dato que quiero obtener, que en este caso es el numero
             String[] projection = {ContactsContract.CommonDataKinds.Phone.NUMBER};
+            // Filtro para solo obtener el contacto que tenga ese id
             String selection = ContactsContract.CommonDataKinds.Phone.CONTACT_ID + " = ?";
+            // Consigo ese contaccto deseado
             String[] selectionArgs = {contactId};
 
+            // Uso otro try catch para asi poder controlar las excepciones
+            // Utilizo un cursor para poder obtener la posición de la colunma y registro del número aplicando el filtro del contacto
             try (Cursor phoneCursor = getContentResolver().query(
                     ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
                     projection,
@@ -183,52 +189,77 @@ public class MovieDetailsActivity extends AppCompatActivity {
                     selectionArgs,
                     null)) {
 
+                // Compruebo si el cursor en donde controlo y consulto el número no es nulo y puede moverse al siguiente
                 if (phoneCursor != null && phoneCursor.moveToFirst()) {
+                    // Obtengo la posición de la columna en donde está el número
                     int numberIndex = phoneCursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER);
+                    // Guardo el número de telefono de esa columna y posición en la variable que he creado
                     selectedContactNumber = phoneCursor.getString(numberIndex);
 
+                    // Compruebo si el número del contacto elegido no es nulo ni está vacio
                     if (selectedContactNumber != null && !selectedContactNumber.trim().isEmpty()) {
+                        // Lanzo un Toast avisando al usuario indicandole el número del contacto que ha elegido
                         showToast("Número seleccionado: " + selectedContactNumber);
 
+                        // Compruebo que el usuario tenga los permisos de envio de sms activados
                         if (ContextCompat.checkSelfPermission(this, Manifest.permission.SEND_SMS)
-                                != PackageManager.PERMISSION_GRANTED) {
+                                != PackageManager.PERMISSION_GRANTED) { // En caso de que no los tenga activados
+                            // Mostramos el dialogo al usuario para que acepte los permisos
                             ActivityCompat.requestPermissions(
                                     this,
                                     new String[]{Manifest.permission.SEND_SMS},
                                     SEND_SMS_PERMISSION_REQUEST_CODE
                             );
-                        } else {
+                        } else { // En caso de que pase todos los filtros anteriores
+                            // Llamo al método ya para abrir la aplicación de sms y poder enviar el sms
                             openSmsApp();
                         }
-                    } else {
+                    } else { // En caso de que el número de contacto no sea valido para poder enviarle un sms
+                        // Lanzo un Toast al usuario avisandole del error
                         showToast("El contacto no tiene un número de teléfono válido.");
                     }
-                } else {
+                } else { // En caso de que no se pueda obtener el número del contacto
+                    // Lanzo un Toast al usuario avisandole del error
                     showToast("No se pudo obtener el número de teléfono.");
                 }
-            } catch (Exception e) {
+            } catch (Exception e) { // En caso de que ocurra alguna excepción
                 e.printStackTrace();
+                // Lanzo un Toast al usuario avisandole del error
                 showToast("Error al obtener el número del contacto.");
             }
-        } else {
+        } else { // En caso de que no podamos obtener el id del contacto
+            // Lanzo un Toast al usuario avisandole del error
             showToast("No se pudo obtener el ID del contacto.");
         }
     }
 
     /**
-     * Método para*/
+     * Método en donde una vez comprobado si el número del contacto elegido es correcto o no
+     * procedo a crear un Intent en donde meteré datos como el tipo de acción que tiene que hacer
+     * que en este caso es enviar un sms, estableceré el número al que se tiene que enviar, el mensaje
+     * y abriré el intent en donde se nos abrirá una conversación con ese contacto y con el mensaje listo
+     * para enviar*/
     private void openSmsApp() {
+        // Procedo a verificar si el número seleccionado es nulo o está vacia
         if (selectedContactNumber != null && !selectedContactNumber.trim().isEmpty()) {
+            // En caso de estar relleno y no ser nulo uso un try catch para poder manejar las excepciones
             try {
+                // Creo un nuevo intent en donde especifico que quiero enviar un sms
                 Intent smsIntent = new Intent(Intent.ACTION_SENDTO);
+                // Establezco el destinatario del sms gracias al smsto y al número que he obtenido al elegir un contacto
                 smsIntent.setData(Uri.parse("smsto:" + Uri.encode(selectedContactNumber)));
-                smsIntent.putExtra("sms_body", movieMessage+movie.getTitle()+" con valoración: "+movie.getRanking());
-                startActivity(smsIntent);  // Lanzamos la actividad para enviar el SMS
-            } catch (Exception e) {
+                // Establezco el cuerpo del texto con la estiqueta sms_body con el mensaje que yo quiera
+                smsIntent.putExtra("sms_body", movieMessage+movie.getTitle()+" con valoración: "+valora.getText().toString());
+                // Lanzo la actividad que me llevará a una conversación por sms con el contacto elegido y con el mensaje para enviar
+                startActivity(smsIntent);
+            } catch (Exception e) { // En caso de que surja alguna exceipción
+                // Por el logCat muestro todo el error para así depurar
                 Log.e("SMS_INTENT_ERROR", "Error al abrir la app de SMS", e);
+                // Lanzo un Toast al usuario avisandole de que algo ha ido mal
                 showToast("No se pudo abrir la aplicación de SMS.");
             }
-        } else {
+        } else { // En caso de que si sea nulo o este vacio
+            // Lanzo un Toast al usuario avisano de que no se pudo obtener el número valido para el envio
             showToast("No se pudo obtener un número válido para el SMS.");
         }
     }
@@ -259,64 +290,6 @@ public class MovieDetailsActivity extends AppCompatActivity {
             }
         }
     }
-
-    /**
-     * @param movie
-     * Método para */
-    private void loadMovieDetails(MovieOverviewResponse movie) {
-        titleView.setText(movie.getTitle());
-        fecha.setText("Release Date: " + movie.getYear());
-        Picasso.get()
-                .load(movie.getImageUrl())
-                .placeholder(R.drawable.baseline_autorenew_24)
-                .into(imagenPeli);
-        Log.d("API_RESPONSE", "ID Movie: " + movie.getId());
-
-        Call<MovieOverviewResponse> call = imdbApiService.getMovieOverview(movie.getId());
-        call.enqueue(new Callback<MovieOverviewResponse>() {
-            @Override
-            public void onResponse(Call<MovieOverviewResponse> call, Response<MovieOverviewResponse> response) {
-                Log.d("API_RESPONSE", "Código HTTP: " + response.code());
-                Log.d("API_RAW_RESPONSE", response.body().toString());
-
-                if (response.isSuccessful() && response.body() != null) {
-                    Log.d("API_RAW_RESPONSE", response.raw().toString()); // JSON crudo
-                    Log.d("API_RAW_BODY", response.body() != null ? response.body().toString() : "Body es null");
-                    try {
-                        String plotText = response.body().getPlot() != null &&
-                                response.body().getPlot().getPlotText() != null &&
-                                response.body().getPlot().getPlotText().getPlainText() != null
-                                ? response.body().getPlot().getPlotText().getPlainText()
-                                : "Descripción no disponible.";
-
-                        descrip.setText(plotText);
-
-                        double rating = response.body().getRatingsSummary() != null
-                                ? response.body().getRatingsSummary().getAggregateRating()
-                                : 0;
-
-                        valora.setText(rating > 0 ? "Rating: " + rating : "Rating no disponible.");
-                    } catch (Exception e) {
-                        Log.e("API_PARSE_ERROR", "Error procesando la respuesta: " + e.getMessage());
-                        descrip.setText("Error al cargar la descripción.");
-                        valora.setText("Error al cargar el rating.");
-                    }
-                } else {
-                    Log.e("API_ERROR", "Respuesta no exitosa. Código: " + response.code());
-                    descrip.setText("Descripción no disponible.");
-                    valora.setText("Rating no disponible.");
-                }
-            }
-
-            @Override
-            public void onFailure(Call<MovieOverviewResponse> call, Throwable t) {
-                Log.e("API_FAILURE", "Error: " + t.getMessage());
-                descrip.setText("Error al cargar la descripción.");
-                valora.setText("Error al cargar el rating.");
-            }
-        });
-    }
-
 
     /**
      * @param mensaje

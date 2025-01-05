@@ -7,27 +7,52 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Spinner;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.recyclerview.widget.GridLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.clase.engenios_manuelimdbapp.R;
+import com.clase.engenios_manuelimdbapp.adapters.MovieAdapters;
+import com.clase.engenios_manuelimdbapp.adapters.SpinnerGeneroAdapter;
+import com.clase.engenios_manuelimdbapp.api.TMDBApiService;
 import com.clase.engenios_manuelimdbapp.databinding.FragmentSlideshowBinding;
+import com.clase.engenios_manuelimdbapp.models.Movie;
+import com.clase.engenios_manuelimdbapp.models.TMDBMovie;
 import com.google.android.material.navigation.NavigationView;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+import retrofit2.Retrofit;
+import retrofit2.converter.gson.GsonConverterFactory;
+
+/**
+ * @author Manuel
+ * @version 1.0*/
 
 public class SlideshowFragment extends Fragment {
-
-    private String userName="";
-    private String userEmail="";
-    private String userPhotoUrl="";
+    // Declaro las variables necesarias para la clase
     private FragmentSlideshowBinding binding=null;
-    private EditText busqueda = null;
-    private Button botonBuscar = null;
-    private Spinner spinnerGenero = null;
-    private Toast mensajeToast = null;
+    private EditText busqueda = null; // Variable que representa el editText donde metemos el año para filtrar las películas
+    private Button botonBuscar = null; // Variable que representa el botón de buscar película
+    private Spinner spinnerGenero = null; // Variable que representa el spinner de categorias de películas
+    private Toast mensajeToast = null; // Variable para manejar los Toast del fragmento
+    private RecyclerView recy = null; // Variable que representa el recyclerView de la interfaz
+    private TMDBApiService apiService = null; // Variable para poder hacer la llamada a la interfaz de la API de TMDB
+    private MovieAdapters adaptador = null; // Variable que representa el adaptador del recyclerView
+    private Map<String, String> genreMap = new HashMap<>(); // Mapa para almacenar ID de géneros y nombres de la busqueda en la API
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
@@ -40,17 +65,189 @@ public class SlideshowFragment extends Fragment {
         NavigationView navigationView = getActivity().findViewById(R.id.nav_view);
         View headerView = navigationView.getHeaderView(0);
 
+        // Obtengo de la interfaz todos los componentes visuales necesarios
         busqueda = (EditText) binding.editFechaPeli;
         botonBuscar = (Button) binding.btnBuscarPeli;
         spinnerGenero = (Spinner) binding.spinnerCategorias;
+        recy = (RecyclerView) binding.recy2;
 
-        botonBuscar.setOnClickListener(new View.OnClickListener() {
+        // Establezco el layout al adaptador para que se vean dos columnas
+        recy.setLayoutManager(new GridLayoutManager(getContext(), 2));
+        // Inicializo un nuevo adaptador pasandole el contexto del fragmento y una lista vacia en principio
+        adaptador = new MovieAdapters(getContext(), new ArrayList<>());
+        // Establezco el adaptador al recyclerView
+        recy.setAdapter(adaptador);
+
+        // Configuro Retrofitpara conectarme a la API y obtener respuestas
+        Retrofit retrofit = new Retrofit.Builder()
+                // Establecemos cual es la dirección principal para las solicitud de conexión
+                .baseUrl("https://api.themoviedb.org/3/")
+                // Establecemos que la respuesta que obtengamos de la API lo covierta en un JSON
+                .addConverterFactory(GsonConverterFactory.create())
+                .build(); // Confirmamos y contruimos el objeto de retrofit personalizado
+
+        // Inicializo la interfaz de la API para poder acceder a los métodos o endpoints de la misma
+        apiService = retrofit.create(TMDBApiService.class);
+
+        // Procedo a llamar al endpoint para obtener todos los géneros
+        // Como parametro paso la Key de la API, y el lenguaje en el que vamos a obtener los generos
+        apiService.getMovieGenres("b1c24c8d4a61565bdbe862465f3a20b5", "en-US").enqueue(new Callback<JsonObject>() {
+            /**
+             * @param call
+             * @param response
+             * En este método onResponse lo que hago es en caso de que la llamada para
+             * obtener los géneros de la API de TMDB y poder establecer el adaptador
+             * al spinner*/
             @Override
-            public void onClick(View view) {
+            public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
+                if (response.isSuccessful() && response.body() != null) { // En caso de que la respuesta sea correcta y el cuerpo no sea nulo
+                    // Creo un objeto de tipo JsonObject en donde cargo todos los datos obtenidos de la respuesta
+                    JsonObject responseObject = response.body();
+                    // Creo un objeto de tipo JsonArray en donde obtengo del JsonObject el array de géneros
+                    JsonArray genresArray = responseObject.getAsJsonArray("genres");
 
+                    // Extraigo los nombres de los géneros, junto con sus ids y relleno el genreMap
+                    genreMap.clear();  // Limpio el mapa en cada nueva carga
+                    List<String> genreNames = new ArrayList<>();
+                    // Utilizo un foreach para recorres el array de géneros
+                    for (JsonElement element : genresArray) {
+                        // Creo un objeto de tipo JsonObject para ir obteniendo los datos de los objetos del array
+                        JsonObject genre = element.getAsJsonObject();
+                        // Obtengo el nombre del género
+                        String genreName = genre.get("name").getAsString();
+                        // Obtengo el ID de género
+                        String genreId = genre.get("id").getAsString();
+                        // Agrego a la lista de nombre de géneros el nombre
+                        genreNames.add(genreName);
+                        // Mapeo el nombre del género y de su ID
+                        genreMap.put(genreName, genreId);
+                    }
+
+                    // Configuro el adaptador del Spinner
+                    SpinnerGeneroAdapter adapter = new SpinnerGeneroAdapter(
+                            getActivity(), // Le paso la actividad
+                            android.R.layout.simple_spinner_item, // Le paso el item de spinner de la interfaz
+                            genreNames.toArray(new String[0]) // Le paso la lista en formato array con la elección principal
+                    );
+                    // Establezco el adaptador del spinner del genero con el adaptador que he creado antes
+                    spinnerGenero.setAdapter(adapter);
+                } else { // En caso de que la respuesta no sea satisfactoria o sea nula
+                    // Lano un Toast avisando al usuario de lo ocurrido
+                    showToast("Error al cargar los géneros");
+                }
+            }
+
+            /**
+             * @param call
+             * @param t
+             * En este método onFailure lo que hacemos es que en caso de que
+             * falle la llamada a la API mostrmos un Toast al usuario
+             * avisandole del error ocurrido*/
+            @Override
+            public void onFailure(Call<JsonObject> call, Throwable t) {
+                // Lanzo un Toast al usuario para que sepá que error a ocurrido
+                showToast("Error de conexión: " + t.getMessage());
             }
         });
 
+        // Establezco un evento al botón de buscar para que suceda cuando le pulsemos
+        botonBuscar.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                // Creo una variable en donde obtengo el año para filtrar
+                String year = busqueda.getText().toString();
+                // Obtengo el genero que he elegido con el spinner
+                String selectedGenre = (String) spinnerGenero.getSelectedItem();
+
+                // Comprubo si las variables anteriores son nulas o no estan rellenas
+                if (year.isEmpty() || selectedGenre == null) {
+                    // Si así es, lanzo un Toast avisando al usuario que rellene todos los datos
+                    showToast("Por favor, ingrese un año y seleccione un género.");
+                    // Y finalizamos el método
+                    return;
+                }
+
+                // Obtengo el id del género que he elegido en el spinner
+                String genreId = genreMap.get(selectedGenre);
+
+                // Llamo al método de la interfaz con la que manejo el servicio de la API
+                apiService.searchMoviesByGenreAndYear(
+                        "b1c24c8d4a61565bdbe862465f3a20b5", // Establezco la key de la api
+                        "en-US", // Establezco el idioma en que me devuelve los datos
+                        genreId, // Establezco el id del género elegido
+                        year // Establezco el año para filtrar
+                ).enqueue(new Callback<TMDBMovie>() {
+                    /**
+                     * @param call
+                     * @param response
+                     * Con este método onReponse es lo que ejecuto cuando la API
+                     * responde correctamente ante la llamada, lo que hago es crear una lista
+                     * para obtener los resultados de la misma, mientras que luego voy creando
+                     * objetos de tipo Movie rellenando todos sus datos y los vamos agregando a la lista
+                     * de películas y series filtradas por el año y género*/
+                    @Override
+                    public void onResponse(Call<TMDBMovie> call, Response<TMDBMovie> response) {
+                        if (response.isSuccessful() && response.body() != null) {
+                            // Creo una lista de TMDBMovie para obtener los resultados de la llamada a la API
+                            List<TMDBMovie> tmdbMovies = response.body().getResults();
+
+                            // Verifico que la lista de películas no esté vacía o sea nula
+                            if (tmdbMovies != null && !tmdbMovies.isEmpty()) {
+                                // Creo una lista de tipo Movie para poder ir generando las películas
+                                List<Movie> movies = new ArrayList<>();
+
+                                // Convierto cada objeto TMDBMovie a un objeto Movie
+                                for (TMDBMovie tmdbMovie : tmdbMovies) {
+                                    String title = tmdbMovie.getTitle(); // Obtengo el titulo de la pelicula
+                                    String originalTitle = tmdbMovie.getOriginal_title(); // Obtengo el titulo original de la pelicula
+                                    String releaseDate = tmdbMovie.getRelease_date(); // Obtengo la fecha de estreno
+                                    String overview = tmdbMovie.getOverview(); // Obtengo la descripción de la misma
+                                    String rati = tmdbMovie.getVote_average(); // Obtengo la valoración de la película
+                                    String idMo = tmdbMovie.getId(); // Obtengo el id de la película
+
+                                    // Creo una variable para la imagen de portada, ya que la API solo nos da la ruta relativa
+                                    String imageUrl = "https://image.tmdb.org/t/p/w600_and_h900_bestv2" + tmdbMovie.getPoster_path();
+
+                                    // Creo el Objeto movie donde guardaré todos los datos
+                                    Movie movie = new Movie();
+                                    movie.setId(idMo); // Guardo el ID
+                                    movie.setTitle(title); // Guardo el título
+                                    movie.setOriginalTitle(originalTitle); // Guardo el titulo original
+                                    movie.setReleaseDate(releaseDate); // Guardo la fecha de publicación
+                                    movie.setPosterPath(imageUrl); // Guardo la imagen de portada
+                                    movie.setDescripcion(overview); // Guardo la descripción
+                                    movie.setValoracion(rati); // Guardo la valoración
+
+                                    // Agrego la Movie creada a la lista
+                                    movies.add(movie);
+                                }
+
+                                // Paso la lista completa de películas junto con el Contexto al adaptador del Recycler
+                                adaptador = new MovieAdapters(getContext(), movies);
+                                // Establecemos el adaptador al recycler
+                                recy.setAdapter(adaptador);
+                            } else { // En caso de que la lista este vacia
+                                // Lanzo un Toast al usuario diciendole que no se han encontrado películas
+                                showToast("No se encontraron películas.");
+                            }
+                        } else { // En caso de que la respuesta de la API no sea la correcta
+                            // Lanzo un Toast al usuario diciendole que no se han encontrado películas
+                            showToast("No se encontraron películas.");
+                        }
+                    }
+
+                    /**
+                     * @param call
+                     * @param t
+                     * Método que sucedera si la llamada a la API falla*/
+                    @Override
+                    public void onFailure(Call<TMDBMovie> call, Throwable t) {
+                        // Lanzo un Toast notificando al usuario del error ocurrido
+                        showToast("Error de conexión: " + t.getMessage());
+                    }
+                });
+            }
+        });
 
         return root;
     }

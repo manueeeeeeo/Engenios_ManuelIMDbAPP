@@ -1,4 +1,27 @@
 package com.clase.engenios_manuelimdbapp.api;
 
+import com.clase.engenios_manuelimdbapp.models.TMDBMovie;
+import com.google.gson.JsonObject;
+
+import retrofit2.Call;
+import retrofit2.http.GET;
+import retrofit2.http.Query;
+
+/**
+ * @author Manuel
+ * @version 1.0*/
+
 public interface TMDBApiService {
+    // Consulta a la API para obtener todos los géneros existentes en la API
+    @GET("genre/movie/list")
+    Call<JsonObject> getMovieGenres(@Query("api_key") String apiKey, @Query("language") String language);
+
+    // Consulta a la API para obtener todas las películas aplicando en filtro de un género y un año
+    @GET("discover/movie")
+    Call<TMDBMovie> searchMoviesByGenreAndYear(
+            @Query("api_key") String apiKey,
+            @Query("language") String language,
+            @Query("with_genres") String genreId,
+            @Query("primary_release_year") String year
+    );
 }
