@@ -34,6 +34,7 @@ public class Inicio extends AppCompatActivity {
     private SignInButton signInButton=null; // Variable para el botón de incio de sesión co Google
     private GoogleSignInClient googleSignInClient=null; // Variable para representar la instancia del flujo de datos en el inicio de sesión con Gogle
     private ActivityResultLauncher<Intent> signInLauncher=null; // Variable para controlar si el inicio de sesión fue correcto, fallo, etc
+    private String idUsuario = null; // Variable para guardar el id del usuario registrado
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -131,6 +132,8 @@ public class Inicio extends AppCompatActivity {
                             intent.putExtra("email", user.getEmail());
                             // Establezco como parceable la key y el valor de la url de la foto de usuario de la cuenta que inicio
                             intent.putExtra("photoUrl", user.getPhotoUrl().toString());
+                            // Establezco como parceable la key y el valor del uId del usuario de Firebase
+                            intent.putExtra("idUsuario", user.getUid());
                             // Iniciamos la actividad ya con el objeto parceable introducido y todo
                             startActivity(intent);
                             // Finalizamos la actividad actual

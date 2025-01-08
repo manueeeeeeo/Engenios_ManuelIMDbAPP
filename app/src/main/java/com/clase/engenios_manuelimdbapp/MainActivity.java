@@ -40,6 +40,7 @@ public class MainActivity extends AppCompatActivity {
     private String nombre = null; // Variable donde cargaré el nombre de usuario
     private String correo = null; // Variable donde cargaré le email de usuario
     private String urlPerfil = null; // Variable donde cargaré la url de la foto de perfil de usuario
+    private String uIdUsuario = null; // Variable para cargar y manejar el uid del usuario
     private SharedPreferences sharedPreferences = null; // Variable para manejar las preferencias del usuario y guardar posibles datos
     private TextView infoCorreo = null; // Variable para manejar el textview del correo del usuario
     private TextView infoNombre = null; // Variables para manejar el textview del nombre del usuario
