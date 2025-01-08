@@ -1,5 +1,6 @@
 package com.clase.engenios_manuelimdbapp.ui.slideshow;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -15,6 +16,7 @@ import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.clase.engenios_manuelimdbapp.MovieListActivity;
 import com.clase.engenios_manuelimdbapp.R;
 import com.clase.engenios_manuelimdbapp.adapters.MovieAdapters;
 import com.clase.engenios_manuelimdbapp.adapters.SpinnerGeneroAdapter;
@@ -170,82 +172,14 @@ public class SlideshowFragment extends Fragment {
                 // Obtengo el id del género que he elegido en el spinner
                 String genreId = genreMap.get(selectedGenre);
 
-                // Llamo al método de la interfaz con la que manejo el servicio de la API
-                apiService.searchMoviesByGenreAndYear(
-                        "b1c24c8d4a61565bdbe862465f3a20b5", // Establezco la key de la api
-                        "en-US", // Establezco el idioma en que me devuelve los datos
-                        genreId, // Establezco el id del género elegido
-                        year // Establezco el año para filtrar
-                ).enqueue(new Callback<TMDBMovie>() {
-                    /**
-                     * @param call
-                     * @param response
-                     * Con este método onReponse es lo que ejecuto cuando la API
-                     * responde correctamente ante la llamada, lo que hago es crear una lista
-                     * para obtener los resultados de la misma, mientras que luego voy creando
-                     * objetos de tipo Movie rellenando todos sus datos y los vamos agregando a la lista
-                     * de películas y series filtradas por el año y género*/
-                    @Override
-                    public void onResponse(Call<TMDBMovie> call, Response<TMDBMovie> response) {
-                        if (response.isSuccessful() && response.body() != null) {
-                            // Creo una lista de TMDBMovie para obtener los resultados de la llamada a la API
-                            List<TMDBMovie> tmdbMovies = response.body().getResults();
-
-                            // Verifico que la lista de películas no esté vacía o sea nula
-                            if (tmdbMovies != null && !tmdbMovies.isEmpty()) {
-                                // Creo una lista de tipo Movie para poder ir generando las películas
-                                List<Movie> movies = new ArrayList<>();
-
-                                // Convierto cada objeto TMDBMovie a un objeto Movie
-                                for (TMDBMovie tmdbMovie : tmdbMovies) {
-                                    String title = tmdbMovie.getTitle(); // Obtengo el titulo de la pelicula
-                                    String originalTitle = tmdbMovie.getOriginal_title(); // Obtengo el titulo original de la pelicula
-                                    String releaseDate = tmdbMovie.getRelease_date(); // Obtengo la fecha de estreno
-                                    String overview = tmdbMovie.getOverview(); // Obtengo la descripción de la misma
-                                    String rati = tmdbMovie.getVote_average(); // Obtengo la valoración de la película
-                                    String idMo = tmdbMovie.getId(); // Obtengo el id de la película
-
-                                    // Creo una variable para la imagen de portada, ya que la API solo nos da la ruta relativa
-                                    String imageUrl = "https://image.tmdb.org/t/p/w600_and_h900_bestv2" + tmdbMovie.getPoster_path();
-
-                                    // Creo el Objeto movie donde guardaré todos los datos
-                                    Movie movie = new Movie();
-                                    movie.setId(idMo); // Guardo el ID
-                                    movie.setTitle(title); // Guardo el título
-                                    movie.setOriginalTitle(originalTitle); // Guardo el titulo original
-                                    movie.setReleaseDate(releaseDate); // Guardo la fecha de publicación
-                                    movie.setPosterPath(imageUrl); // Guardo la imagen de portada
-                                    movie.setDescripcion(overview); // Guardo la descripción
-                                    movie.setValoracion(rati); // Guardo la valoración
-
-                                    // Agrego la Movie creada a la lista
-                                    movies.add(movie);
-                                }
-
-                                // Paso la lista completa de películas junto con el Contexto al adaptador del Recycler
-                                adaptador = new MovieAdapters(getContext(), movies);
-                                // Establecemos el adaptador al recycler
-                                recy.setAdapter(adaptador);
-                            } else { // En caso de que la lista este vacia
-                                // Lanzo un Toast al usuario diciendole que no se han encontrado películas
-                                showToast("No se encontraron películas.");
-                            }
-                        } else { // En caso de que la respuesta de la API no sea la correcta
-                            // Lanzo un Toast al usuario diciendole que no se han encontrado películas
-                            showToast("No se encontraron películas.");
-                        }
-                    }
-
-                    /**
-                     * @param call
-                     * @param t
-                     * Método que sucedera si la llamada a la API falla*/
-                    @Override
-                    public void onFailure(Call<TMDBMovie> call, Throwable t) {
-                        // Lanzo un Toast notificando al usuario del error ocurrido
-                        showToast("Error de conexión: " + t.getMessage());
-                    }
-                });
+                // Creo el Intent para pasar a la siguiente actividad
+                Intent in = new Intent(getContext(), MovieListActivity.class);
+                // Le paso como parametros dos objetos
+                // El id del género que he seleccionado
+                in.putExtra("generoId", genreId);
+                // El año de la busqueda de las películas
+                in.putExtra("yearBusqueda", year);
+                startActivity(in);
             }
         });
 
