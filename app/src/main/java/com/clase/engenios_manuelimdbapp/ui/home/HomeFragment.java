@@ -20,7 +20,9 @@ import com.clase.engenios_manuelimdbapp.models.MovieOverviewResponse;
 import com.clase.engenios_manuelimdbapp.models.PopularMovieResponse;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import okhttp3.OkHttpClient;
@@ -38,13 +40,12 @@ import retrofit2.converter.gson.GsonConverterFactory;
 public class HomeFragment extends Fragment {
 
     private FragmentHomeBinding binding;
-    private RecyclerView recyclerView = null; // Variable que nos permite manejar el RecyclerView de la interfaz
-    private MovieAdapters adapter = null; // Variable que hace referencia al adaptador para el recycler de las películas
+    private RecyclerView recyclerView; // Variable que nos permite manejar el RecyclerView de la interfaz
+    private MovieAdapters adapter; // Variable que hace referencia al adaptador para el recycler de las películas
     private List<Movie> movieList = new ArrayList<>(); // Variable inicializada de la lista de películas
-    private IMDBApiService imdbApiService = null; // Variable para poder usar la interfaz y los métodos de la API
+    private IMDBApiService imdbApiService; // Variable para poder usar la interfaz y los métodos de la API
     private int respuestasCorrectas = 0; // Variable para contar si todo se ha cargado correctamente
     private Toast mensajeToast = null; // Variable para controlar los Toast de este fragmento
-    private List<Call<?>> activeCalls = new ArrayList<>(); // Variable para poder manejar el estado de las llamadas en este fragmento
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
@@ -53,6 +54,8 @@ public class HomeFragment extends Fragment {
 
         // Limpio la lista de películas al iniciar el HomeFragment para evitar posibles errores y duplicaciones
         movieList.clear();
+
+        respuestasCorrectas = 0;
 
         // Obtengo el reyclerView
         recyclerView = binding.recyclerView;
@@ -70,7 +73,7 @@ public class HomeFragment extends Fragment {
                     // Creamos una nueva solicitud basandonos en la original
                     Request newRequest = chain.request().newBuilder()
                             // Establecemos un encabezado con el token para acceder a la conexión segura
-                            .addHeader("X-RapidAPI-Key", "6d380b1d6cmsh63788105a9b29dfp1a9da1jsnc6a1d0b0947d")
+                            .addHeader("X-RapidAPI-Key", "4df2589b02mshc86c44d47f1656cp147b6djsnc4e6087af463")
                             // Establecemos un encabezado con el host al que vamos a solicitar conectarnos
                             .addHeader("X-RapidAPI-Host", "imdb-com.p.rapidapi.com")
                             .build(); // Confirmamos las configuraciones de la conexión
@@ -116,8 +119,6 @@ public class HomeFragment extends Fragment {
         // Creo un objeto de tipo llamada a la API indicando el método con el que vamos a enlazar el endpoint y le indicamos que lo
         // obtenemos en inglés con el parametro US
         Call<PopularMovieResponse> call = imdbApiService.getTopMeterTitles("US");
-        // Agrego la llamada a la lista de llamadas por si es necesario cancelarla al cambiar de fragmento
-        activeCalls.add(call);
         // Procedemos a ejecutar la llamada anterior
         call.enqueue(new Callback<PopularMovieResponse>() {
             /**
@@ -169,7 +170,7 @@ public class HomeFragment extends Fragment {
                         showToast("Caratulas cargadas, cargando más datos...");
 
                         // Llamo al método para obtener la información restante de las películas y series iniciando por la posición 0
-                        loadMovieDetailsSequentially(movieList, 0);
+                        loadMovieDetailsSequentially(movieList, 0, 0);
                     } else { // En caso de que edges sea nulo
                         // Lanzamos por el LogCat el error o mensaje de advertencia de que no hay título disponibles
                         Log.e("HomeFragment", "No hay títulos disponibles");
@@ -205,7 +206,7 @@ public class HomeFragment extends Fragment {
      * que me faltan que son la descripción y la valoración una vez obtenidas, las establezco
      * en la película que toca y llamo al mismo método de forma recursiva sumando un 1 al
      * index*/
-    private void loadMovieDetailsSequentially(List<Movie> movies, int index) {
+    private void loadMovieDetailsSequentially(List<Movie> movies, int index, int reintento) {
         // Compruebo si el index que le pasamos es superior a la longitud de la lista de películas
         if (index >= movies.size()) {
             // Cuando todas las películas han sido creadas y obtenidos todos sus datos
@@ -219,8 +220,6 @@ public class HomeFragment extends Fragment {
         // Configuro la llamada a la API utilziando la interfaz de imdbApiService y con el método en donde obtengo los datos de una
         // película o serie pasandole como parametro el id de la película
         Call<MovieOverviewResponse> call = imdbApiService.getMovieOverview(movie.getId());
-        // Agrego la llamada a la lista de llamadas por si es necesario cancelarla al cambiar de fragmento
-        activeCalls.add(call);
         call.enqueue(new Callback<MovieOverviewResponse>() {
             /**
              * @param call
@@ -240,7 +239,8 @@ public class HomeFragment extends Fragment {
                     // en su interior lo que hago es acceder al cuerpo, data, title, plot, plotText y plainText, que es por así
                     // decirlo la ruta para poder acceder al valor de la descripción de la película o serie
                     String plotText = response.body().getData().getTitle().getPlot() != null &&
-                            response.body().getData().getTitle().getPlot().getPlotText() != null
+                            response.body().getData().getTitle().getPlot().getPlotText() != null &&
+                            response.body().getData().getTitle().getPlot().getPlotText().getPlainText() != null
                             ? response.body().getData().getTitle().getPlot().getPlotText().getPlainText()
                             : "Descripción no disponible";
                     // Estblezco en la película la descripción con la variable anterior
@@ -260,17 +260,16 @@ public class HomeFragment extends Fragment {
                     if (movieIndex != -1) { // En caso de que sea correcto
                         // Actualizo el adaptador solo la posición de la película que acabo de cargar todos los datos
                         adapter.notifyItemChanged(movieIndex);
+                        // Sumo uno a la variable para contabilizar las respuestas realizadas y obtenidas
+                        respuestasCorrectas++;
                     }
-
-                    // Sumo uno a la variable para contabilizar las respuestas realizadas y obtenidas
-                    respuestasCorrectas++;
                 } else { // En caso de que la respuesta no sea satisfactoria o el cuerpo sea nulo
                     // Muestro por el LogCat el error al cargar el id de las películas
                     Log.e("API_FAILURE", "Error al cargar los detalles de la película: " + movie.getId());
                 }
 
                 // Llamo de manera recursiva al mismo método con la siguiente película
-                loadMovieDetailsSequentially(movies, index + 1);
+                loadMovieDetailsSequentially(movies, index + 1, 0);
             }
 
             /**
@@ -282,12 +281,35 @@ public class HomeFragment extends Fragment {
             @Override
             public void onFailure(Call<MovieOverviewResponse> call, Throwable t) {
                 Log.e("API_FAILURE", "Error en la llamada API: " + t.getMessage());
+                Log.e("API_FAILURE", "Entrando al método de volver a intentar");
                 // Llamo de manera recursiva al mismo método con la siguiente película
-                loadMovieDetailsSequentially(movies, index + 1);
+                volveraIntentar(index, reintento, movies);
             }
         });
     }
 
+    /**
+     * @param movies
+     * @param index
+     * @param reintento
+     * Método para que en caso de que falle la llamada a la obtención de datos de una película
+     * o serie se repita hasta 3 veces, en caso de que se repita 3 veces y siga sin cargar
+     * la establecemos como que no se pueden cargar los detalles*/
+    private void volveraIntentar(int index, int reintento, List<Movie> movies) {
+        int intentosMaximos = 3; // Límite de reintentos
+        // Comprubo que el reintento sea menor que el número de intentos
+        if (reintento < intentosMaximos) { // De ser así
+            // Lanzo un Toast avisando al usuario que nose que película se va a reintentar cargar los datos
+            showToast("Reintentando cargar detalles de la película " + movies.get(index).getTitle());
+            // Procedo a llamar al método para obtener los datos sumando uno a la variable de intento
+            loadMovieDetailsSequentially(movies, index, reintento + 1);
+        } else { // De ser igual o mayor al número maximo de intentos
+            // Lanzo un Toast diciendo al usuario que no se han podido cargar los detalles
+            showToast("No se pudo cargar los detalles de " + movies.get(index).getTitle() + ". Continuando...");
+            // Prosigo con la siguiente película y sus datos
+            loadMovieDetailsSequentially(movies, index + 1, 0);
+        }
+    }
 
     /**
      * @param totalMovies
@@ -301,27 +323,14 @@ public class HomeFragment extends Fragment {
         }
     }
 
-    /**
-     * Con este método onDestroyView lo que estoy haciendo
-     * esque cada vez que se destruya el fragmento de HomeFragment
-     * se cancelen todas las llamadas, es decir, si por ejemplo yo que cargo todos los datos
-     * de las películas con un método recurisvo, no ha terminado y me voy a otro fragmento,
-     * que se paré la consulta, ya que sino seguiria obteniendo cosas de la api, es para
-     * hacer la aplicación más robusta y para no tener llamadas a las APIs por detras*/
     @Override
     public void onDestroyView() {
         super.onDestroyView();
         binding = null;
 
-        // Utilizo un foreach para ir una a una todas las llamadas de la lista irlas cancelando
-        for (Call<?> call : activeCalls) {
-            if (!call.isCanceled()) { // Compruebo si está cancelada ya, en caso de no estar cancelada
-                // La cancelo
-                call.cancel();
-            }
-        }
-        // Limpio la lista de llamadas a la API
-        activeCalls.clear();
+        // Limpio el RecyclerView y el Adapter
+        recyclerView = null;
+        adapter = null;
     }
 
     /**
@@ -329,14 +338,16 @@ public class HomeFragment extends Fragment {
      * Método para ir matando los Toast y mostrar todos en el mismo para evitar
      * colas de Toasts y que se ralentice el dispositivo*/
     public void showToast(String mensaje){
-        // Comprobamos si existe algun toast cargado en el toast de la variable global
-        if (mensajeToast != null) { // En caso de que si que exista
-            mensajeToast.cancel(); // Le cancelamos, es decir le "matamos"
-        }
+        if (getContext() != null){
+            // Comprobamos si existe algun toast cargado en el toast de la variable global
+            if (mensajeToast != null) { // En caso de que si que exista
+                mensajeToast.cancel(); // Le cancelamos, es decir le "matamos"
+            }
 
-        // Creamos un nuevo Toast con el mensaje que nos dan de argumento en el método
-        mensajeToast = Toast.makeText(getContext(), mensaje, Toast.LENGTH_SHORT);
-        // Mostramos dicho Toast
-        mensajeToast.show();
+            // Creamos un nuevo Toast con el mensaje que nos dan de argumento en el método
+            mensajeToast = Toast.makeText(getContext(), mensaje, Toast.LENGTH_SHORT);
+            // Mostramos dicho Toast
+            mensajeToast.show();
+        }
     }
 }

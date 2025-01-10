@@ -80,28 +80,12 @@ public class MovieAdapters extends RecyclerView.Adapter<MovieAdapters.MovieViewH
                 // Muestro la url de la imagen de portada de la película por el log
                 Log.d("MovieAdapter", "Image URL: " + movie.getPosterPath());
 
-                // Utilizo un try catch para que al ir a ver los detalles de una película si no tiene todos los datos
-                // sino que lanze un Toast diciendo que aun se estan cargando los datos de esa película
-                try {
-                    // Compruebo que la valoración y la descripción no sean nulas
-                    if(movieDetail.getDescripcion().isEmpty() || movieDetail.getValoracion().isEmpty() ||
-                            movieDetail.getDescripcion() == null || movieDetail.getValoracion() == null){ // De si ser nulas
-                        // Lanzo un Toast diciendo al usuario que aun no se han cargado los datos de esa película
-                        showToast("Estamos cargando los datos de está película aún!!!!");
-                    }else{ // En caso de que la descripción y la valoración ya esten cargadas
-                        // Creo un nuevo intent al que voy a pasar los datos para poder cargar todo de forma más grande y detallada
-                        Intent intent = new Intent(context, MovieDetailsActivity.class);
-                        // Introduzco los datos que voy a querer cargar después y además la key para poder recuperar el objeto
-                        intent.putExtra("movieDetails", movieDetail);
-                        // Iniciamos la nueva actividad sin cerrar está y así no tener que volver a solicitar a la API cargar todas las respuestas
-                        context.startActivity(intent);
-                    }
-                }catch (Exception e){ // En caso de que surja alguna excepción
-                    // Por el LogCat imprimo el error que ha ocurrido
-                    Log.e("MovieAdapter", "Error al manejar el clic: " + e.getMessage());
-                    // Lanzo un Toast también al usuario indicandole que aun no puede
-                    showToast("Estamos cargando los datos de está película aún!!!!");
-                }
+                // Creo un nuevo intent al que voy a pasar los datos para poder cargar todo de forma más grande y detallada
+                Intent intent = new Intent(context, MovieDetailsActivity.class);
+                // Introduzco los datos que voy a querer cargar después y además la key para poder recuperar el objeto
+                intent.putExtra("movieDetails", movieDetail);
+                // Iniciamos la nueva actividad sin cerrar está y así no tener que volver a solicitar a la API cargar todas las respuestas
+                context.startActivity(intent);
             }
         });
 
@@ -125,21 +109,27 @@ public class MovieAdapters extends RecyclerView.Adapter<MovieAdapters.MovieViewH
                 // Guardamos en una variable la valoración de la película
                 String val = movie.getValoracion();
 
-                // En caso de que la película todavia no esté insertada en la bd
-                if (!database.existeEnLaBD(movieId, email)) {
-                    // Utilizo el método de insertar en la bd, pasandole los datos necesarios
-                    long result = database.insertarFavorita(movieId, urlIm, moviTit, fechaPe, des, val, email);
-                    // Basandome en la respuesta del método anterior haremos una cosa u otra
-                    if (result != -1) { // En caso de que el resultado sea diferente de -1
-                        // Lanzamos un toast al usuario indicando que hemos agregado la película a la lista de favoritos
-                        showToast("Película " + movie.getTitle() + " agregada a favoritos");
-                    } else { // En caso de que sea -1
-                        // Lanzamos un toast avisando al usuario que ha ocurrido un error al insertar
-                        showToast("Error al agregar la película a favoritos");
+                // Tengo que comprobar si los dos valores del segundo endpoint son nulos o no
+                if(des == null || val == null){ // En caso de que sean nulos
+                    // Lanzo un Toast al usuario diciendole que lo vuelva a intentar para no dejar campos vacios en la bbdd
+                    showToast("No podemos cargar todos los datos de la película, pruebe más tarde!!");
+                }else{ // En caso de que no sean nulos
+                    // En caso de que la película todavia no esté insertada en la bd
+                    if (!database.existeEnLaBD(movieId, email)) {
+                        // Utilizo el método de insertar en la bd, pasandole los datos necesarios
+                        long result = database.insertarFavorita(movieId, urlIm, moviTit, fechaPe, des, val, email);
+                        // Basandome en la respuesta del método anterior haremos una cosa u otra
+                        if (result != -1) { // En caso de que el resultado sea diferente de -1
+                            // Lanzamos un toast al usuario indicando que hemos agregado la película a la lista de favoritos
+                            showToast("Película " + movie.getTitle() + " agregada a favoritos");
+                        } else { // En caso de que sea -1
+                            // Lanzamos un toast avisando al usuario que ha ocurrido un error al insertar
+                            showToast("Error al agregar la película a favoritos");
+                        }
+                    } else { // En caso de que la película ya este en la bd
+                        // Lanzamos un toast al usuario indicando que ya está esa película en su lista
+                        showToast("La película ya está en favoritos");
                     }
-                } else { // En caso de que la película ya este en la bd
-                    // Lanzamos un toast al usuario indicando que ya está esa película en su lista
-                    showToast("La película ya está en favoritos");
                 }
 
                 return true; // Devolvemos true para manejar las respuestas del método on long click

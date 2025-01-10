@@ -79,10 +79,22 @@ public class MovieDetailsActivity extends AppCompatActivity {
                     .load(movie.getPosterPath()) // Establezco la url que voy a descargar ka imagen
                     .placeholder(R.drawable.baseline_autorenew_24) // Establezco el placeholder de la foto
                     .into(imagenPeli); // Establezco el item donde vamos a cargar la foto
-            // Establezco la descripción de la película o serie en su Textview correspondiente
-            descrip.setText(movie.getDescripcion());
-            // Establezco la valoración de la película o serie en su Textview correspondiente
-            valora.setText(movie.getValoracion());
+            // Compruebo si el valor de la descripción es nula o no
+            if(movie.getDescripcion()==null){ // En caso de que sea nula
+                // Establezco la descripción de la película o serie en su Textview correspondiente
+                descrip.setText("Descripción no disponible");
+            }else{ // En caso de que no sea nula
+                // Establezco la descripción de la película o serie en su Textview correspondiente
+                descrip.setText(movie.getDescripcion());
+            }
+            // Compruebo si el valor de la valoración es nula
+            if(movie.getValoracion()==null){ // En caso de que sea nula
+                // Establezco la valoración de la película o serie en su Textview correspondiente
+                valora.setText("Valoración no disponible");
+            }else{ // En caso de que no sea nula
+                // Establezco la valoración de la película o serie en su Textview correspondiente
+                valora.setText(movie.getValoracion());
+            }
         }
 
         // Procedo a configurar el Launcher para poder abrir otra actividad que en este caso será la de elección de un contacto
