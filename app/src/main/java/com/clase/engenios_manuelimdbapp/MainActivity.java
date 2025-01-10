@@ -57,6 +57,8 @@ public class MainActivity extends AppCompatActivity {
         sharedPreferences = getSharedPreferences("MyPrefs", Context.MODE_PRIVATE);
         // Cargo en la variable que he creado el email del usuario y en caso de que no exista ningun registro ponemos el valor de nada
         correo = sharedPreferences.getString("emailUsuario", "nada");
+        // Cargo en la variable que he creado el uId del usuario y en caso de que no exista ningun registro ponemos el valor de nada
+        uIdUsuario = sharedPreferences.getString("uIDUsuario", "nada");
 
         // Creo un intent que lo que hace es obtener lo que le enviamos desde el login (siempre ha de recibir algo)
         Intent intent = getIntent();
@@ -66,6 +68,7 @@ public class MainActivity extends AppCompatActivity {
         String email = intent.getStringExtra("email");
         // Creamos una variable de tipo url de la foto de perfil donde cargamos la url del usuario
         String photoUrl = intent.getStringExtra("photoUrl");
+        uIdUsuario = intent.getStringExtra("idUsuario");
 
         // Compruebo la variable y lo que tengo guardo en el sharedPreferences
         if(correo.equals("nada")){ // En caso de que el correo sea igual a nada
@@ -79,6 +82,22 @@ public class MainActivity extends AppCompatActivity {
                 // Guardo el nuevo email en las preferencias y confirmo los cambios
                 SharedPreferences.Editor editor = sharedPreferences.edit();
                 editor.putString("emailUsuario", email);
+                editor.apply();
+            }
+        }
+
+        // Compruebo la variable y lo que tengo guardo en el sharedPreferences
+        if(uIdUsuario.equals("nada")){ // En caso de que el correo sea igual a nada
+            // Guardo y confirmo los cambios respecto al valor del email en preferencias
+            SharedPreferences.Editor editor = sharedPreferences.edit();
+            editor.putString("uIDUsuario", email);
+            editor.apply();
+        }else{ // Si el correo es distinto de nada
+            // Compruebo si es el mismo email o no
+            if(!uIdUsuario.equals(email)){ // En caso de que sea otro email diferente
+                // Guardo el nuevo email en las preferencias y confirmo los cambios
+                SharedPreferences.Editor editor = sharedPreferences.edit();
+                editor.putString("uIDUsuario", email);
                 editor.apply();
             }
         }

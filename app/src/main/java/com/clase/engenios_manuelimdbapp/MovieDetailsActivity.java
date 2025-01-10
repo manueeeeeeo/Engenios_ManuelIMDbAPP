@@ -34,7 +34,10 @@ import com.squareup.picasso.Picasso;
 
 public class MovieDetailsActivity extends AppCompatActivity {
     private ImageView imagenPeli = null; // Variable de la película para cargar la portada
-    private TextView titleView = null, valora = null, fecha = null, descrip = null; // Textview para cargar la información
+    private TextView titleView = null; // Variable para manejar el Textview del titulo
+    private TextView valora = null; // Variable para manejar el Textview de la valoración
+    private TextView fecha = null; // Variable para manejar el Textview de la fecha de publicación
+    private TextView descrip = null; // Variable para manejar el Textview de la descripción
     private Button enviarSms = null; // Variable del botón para cuando queramos compartir una película por SMS
     private static final int CONTACTS_PERMISSION_REQUEST_CODE = 1; // Permiso de acceso a los contactos
     private static final int SEND_SMS_PERMISSION_REQUEST_CODE = 2; // Permiso de acceso a enviar SMS
@@ -42,7 +45,7 @@ public class MovieDetailsActivity extends AppCompatActivity {
     private ActivityResultLauncher<Intent> contactPickerLauncher = null; // Variable para lanzar la actividad de elección de contacto y manejar el resultado
     private String selectedContactNumber = null; // Variable en donde guardo el número al que le voy a enviar la película
     private String movieMessage = "Mira!! Está película te puede gustar "; // Mensaje que completaré después y enviaré al contacto
-    private Movie movie = null; // Objeto del tipo MovieOverview
+    private Movie movie = null; // Objeto del tipo Movie
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -63,7 +66,7 @@ public class MovieDetailsActivity extends AppCompatActivity {
         descrip = (TextView) findViewById(R.id.txtDescr);
         enviarSms = (Button) findViewById(R.id.btnCompartirSms);
 
-        // Obtengo el parceable que le pasé, para ahora cargar la información de la pelicula
+        // Obtengo el parceable que le pasé, para ahora cargar la información de la pelicula o serie
         movie = getIntent().getParcelableExtra("movieDetails");
         // Compruebo que recibo algo
         if (movie != null) { // En caso de que si que reciba algo
@@ -76,7 +79,9 @@ public class MovieDetailsActivity extends AppCompatActivity {
                     .load(movie.getPosterPath()) // Establezco la url que voy a descargar ka imagen
                     .placeholder(R.drawable.baseline_autorenew_24) // Establezco el placeholder de la foto
                     .into(imagenPeli); // Establezco el item donde vamos a cargar la foto
+            // Establezco la descripción de la película o serie en su Textview correspondiente
             descrip.setText(movie.getDescripcion());
+            // Establezco la valoración de la película o serie en su Textview correspondiente
             valora.setText(movie.getValoracion());
         }
 

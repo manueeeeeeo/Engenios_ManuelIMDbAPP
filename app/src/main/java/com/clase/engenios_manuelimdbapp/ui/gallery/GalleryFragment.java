@@ -3,9 +3,9 @@ package com.clase.engenios_manuelimdbapp.ui.gallery;
 import android.app.AlertDialog;
 import android.bluetooth.BluetoothAdapter;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -15,7 +15,6 @@ import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
-import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
 import androidx.annotation.NonNull;
@@ -33,7 +32,6 @@ import android.Manifest;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -45,21 +43,27 @@ public class GalleryFragment extends Fragment {
     private FragmentGalleryBinding binding;
     private RecyclerView recy = null; // Variable que hace referencia al RecyclerView
     private Button botonCompartir = null; // Variable para el control del botón de compartir lista de favoritos
-    private static final int SHARE_BLUETOOTH_PERMISSION_REQUEST_CODE = 1; // Variable de los permisos de compartir por Bluetooth
     private Toast mensajeToast = null; // Variable para manejar los Toast del fragmento
     private BluetoothAdapter bluetoothAdapter; // Adaptador de Bluetooth
     private SharedPreferences sharedPreferences = null; // Variable para manejar las preferencias del usuario en la app
     private String email = null; // Variable donde guardo el correo con el que esta la sesión iniciada
 
     // Launcher para manejar la solicitud de permisos de Bluetooth
-    private ActivityResultLauncher<String> requestPermissionLauncher =
-            registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {
-                if (isGranted) { // Si los permisos están concedidos
-                    // Lanzamos un Toast avisando al usuario que los permisos de Buletooth ya estan concedidos
-                    showToast("Permiso de Bluetooth concedido");
-                } else { // En caso de que los permisos no están concedidos
-                    // Lanzamos un Toast avisando al usuario que los permisos no están permitidos
-                    showToast("Permiso de Bluetooth denegado");
+    private ActivityResultLauncher<String[]> solicitudMultiplesPermisos =
+            registerForActivityResult(new ActivityResultContracts.RequestMultiplePermissions(), result -> {
+                boolean todosAceptados = true; // Declaro la variable para controlar si todos estasn aceptados o no
+                for (Boolean aceptado : result.values()) { // Hago un foreach para ir comprobando los permisos necesarios
+                    if (!aceptado) { // En caso de que alguno sea falso
+                        todosAceptados = false; // No están todos los permisos aceptados
+                        break;
+                    }
+                }
+                if (todosAceptados) { // En caso de tener todos los permisos aceptados
+                    // Lanzmos un Toast avisando al usuario que tiene todos los permisos de Bluetooth concedidos
+                    showToast("Todos los permisos de Bluetooth han sido concedidos");
+                } else { // En caso contrario
+                    // Le decimos que existe algun permiso no aceptado
+                    showToast("Algunos permisos de Bluetooth han sido denegados");
                 }
             });
 
@@ -100,6 +104,7 @@ public class GalleryFragment extends Fragment {
         botonCompartir.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                solicitarPermisosBluetooth();
                 // Llamo al método para verificar si tenemos el Bluetooth activado pasandole la lista de favoritas
                 verificarBluetooth(favoriteMoviesList);
             }
@@ -125,6 +130,24 @@ public class GalleryFragment extends Fragment {
         } else { // En caso de que cumpla todos los requisitos anteriores
             // Llamamos al método para mostrar el dialogo
             mostrarDialogoJson(favoriteMoviesList);
+        }
+    }
+
+    /**
+     * Método en donde compruebo que el sdk del dispositivo para
+     * saber si es android 12 o superior y debido a eso si es necesario
+     * que solicite permisos de Bluetooth o no*/
+    private void solicitarPermisosBluetooth() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) { // Para dispositivos Android 12.0 o superiores
+            String[] permisos = {
+                    Manifest.permission.BLUETOOTH_SCAN,
+                    Manifest.permission.BLUETOOTH_CONNECT
+            };
+            solicitudMultiplesPermisos.launch(permisos);
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) { // Para dispositivos Android desde 6.0
+            if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                solicitudMultiplesPermisos.launch(new String[]{Manifest.permission.ACCESS_FINE_LOCATION});
+            }
         }
     }
 

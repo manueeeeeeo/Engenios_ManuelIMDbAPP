@@ -45,8 +45,11 @@ public class MovieListActivity extends AppCompatActivity {
             return insets;
         });
 
+        // Obtengo el Intent desde el que he accedido a esta actividad
         Intent intent = getIntent();
+        // Guardo en la variable que he creado el id que paso por el Intent
         generoId = intent.getStringExtra("generoId");
+        // Guardo en la variable del año que he creado el año que paso por Intent
         year = intent.getStringExtra("yearBusqueda");
 
         // Obtengo el recyclerView de la interfaz de usuario
@@ -69,11 +72,17 @@ public class MovieListActivity extends AppCompatActivity {
         // Inicializo la interfaz de la API para poder acceder a los métodos o endpoints de la misma
         apiService = retrofit.create(TMDBApiService.class);
 
+        // Llamo al método para cargar las películas con la API de IMDB
         cargarPeliculas();
     }
 
     /**
-     * */
+     * Méotodo en donde hago una llamada a la API de TMDB para obtener
+     * y filtrar películas destacadas por año y género, dentro de este método
+     * compruebo tanto el método en caso de que todo funcione correctamente
+     * por lo que generaría objetos de tipo Movie para poder mostrar, agregar a la lista
+     * de favoritas, ect. Además, también miro en caso de que falle la llamada mostrar
+     * el error y manejarlo para que no pete la aplicación*/
     public void cargarPeliculas(){
         // Llamo al método de la interfaz con la que manejo el servicio de la API
         apiService.searchMoviesByGenreAndYear(

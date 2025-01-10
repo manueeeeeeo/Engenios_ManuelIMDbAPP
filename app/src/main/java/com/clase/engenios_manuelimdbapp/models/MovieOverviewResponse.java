@@ -12,7 +12,7 @@ import com.google.gson.annotations.SerializedName;
 public class MovieOverviewResponse implements Parcelable {
 
     @SerializedName("data")
-    private Data data; // Variable que representa la key del JSON que es data
+    private Data data; // Variable que representa la key principal del JSON
 
     protected MovieOverviewResponse(Parcel in) {
         data = in.readParcelable(Data.class.getClassLoader());
@@ -56,8 +56,9 @@ public class MovieOverviewResponse implements Parcelable {
 
     // Clase que he creado y utilizo para hacer referencia a Data
     public static class Data implements Parcelable {
+        // Dentro de la key del JSON "data" tenemos otra que se llama title y ya dentro de está tenemos todos los datos
         @SerializedName("title")
-        private Title title;
+        private Title title; // Variable para manejar el Title de la película
 
         public Data() {}
 
@@ -77,10 +78,16 @@ public class MovieOverviewResponse implements Parcelable {
             }
         };
 
+        /**
+         * @return
+         * Método para obtener el valor del Title*/
         public Title getTitle() {
             return title;
         }
 
+        /**
+         * @param title
+         * Método para establecer el valor del Title*/
         public void setTitle(Title title) {
             this.title = title;
         }
@@ -97,20 +104,18 @@ public class MovieOverviewResponse implements Parcelable {
     }
 
     public static class Title implements Parcelable {
+        // Dentro de la key Title como ya he dicho tenemos toda la demás información, yo he decido crear las variables
+        // solo para las que me interesa
         @SerializedName("id")
-        private String id;
-
+        private String id; // Variable que representa el id de la película o serie
         @SerializedName("titleText")
-        private TitleText titleText;
-
+        private TitleText titleText; // Variable que representa la key para poder acceder al título
         @SerializedName("releaseDate")
-        private ReleaseDate releaseDate;
-
+        private ReleaseDate releaseDate; // Variable que representa la key para poder acceder a la fecha de publicación
         @SerializedName("ratingsSummary")
-        private RatingsSummary ratingsSummary;
-
+        private RatingsSummary ratingsSummary; // Variable que representa la key para poder acceder a la valoración de la película
         @SerializedName("plot")
-        private Plot plot;
+        private Plot plot; // Variable que representa la key para poder acceder a la descripción de la película
 
         public Title() {}
 
@@ -134,42 +139,72 @@ public class MovieOverviewResponse implements Parcelable {
             }
         };
 
+        /**
+         * @return
+         * Método para obtener el valor del id de la película o serie*/
         public String getId() {
             return id;
         }
 
+        /**
+         * @param id
+         * Método para establecer el valor del id de la película o series*/
         public void setId(String id) {
             this.id = id;
         }
 
+        /**
+         * @return
+         * Método para obtener el valor del titleText*/
         public TitleText getTitleText() {
             return titleText;
         }
 
+        /**
+         * @param titleText
+         * Método para establecer el valor del titleText*/
         public void setTitleText(TitleText titleText) {
             this.titleText = titleText;
         }
 
+        /**
+         * @return
+         * Método para obtener el valor de la fecha de publiación*/
         public ReleaseDate getReleaseDate() {
             return releaseDate;
         }
 
+        /**
+         * @param releaseDate
+         * Método para establecer el valor de la fecha de publicación*/
         public void setReleaseDate(ReleaseDate releaseDate) {
             this.releaseDate = releaseDate;
         }
 
+        /**
+         * @return
+         * Método para obtener el valor del plot de la descripción*/
         public RatingsSummary getRatingsSummary() {
             return ratingsSummary;
         }
 
+        /**
+         * @param ratingsSummary
+         * Método para establecer el valor del reatingsSummary*/
         public void setRatingsSummary(RatingsSummary ratingsSummary) {
             this.ratingsSummary = ratingsSummary;
         }
 
+        /**
+         * @return
+         * Método para obtener el valor del plot de la descripción*/
         public Plot getPlot() {
             return plot;
         }
 
+        /**
+         * @param plot
+         * Método para obtener el valor del plot de la descripción*/
         public void setPlot(Plot plot) {
             this.plot = plot;
         }
@@ -211,10 +246,16 @@ public class MovieOverviewResponse implements Parcelable {
             }
         };
 
+        /**
+         * @return
+         * Método para obtener el valor del texto del título*/
         public String getText() {
             return text;
         }
 
+        /**
+         * @param text
+         * Método para obtener el valor del texto del título*/
         public void setText(String text) {
             this.text = text;
         }
@@ -260,26 +301,44 @@ public class MovieOverviewResponse implements Parcelable {
             }
         };
 
+        /**
+         * @return
+         * Método para obtener el valor del año*/
         public int getYear() {
             return year;
         }
 
+        /**
+         * @param year
+         * Método para establecer el valor del año*/
         public void setYear(int year) {
             this.year = year;
         }
 
+        /**
+         * @return
+         * Método para obtener el valor del mes*/
         public int getMonth() {
             return month;
         }
 
+        /**
+         * @param month
+         * Método para establecer el valor del mes*/
         public void setMonth(int month) {
             this.month = month;
         }
 
+        /**
+         * @return
+         * Método para obtener el valor del día*/
         public int getDay() {
             return day;
         }
 
+        /**
+         * @param day
+         * Método para establecer el valor del día*/
         public void setDay(int day) {
             this.day = day;
         }
@@ -319,10 +378,16 @@ public class MovieOverviewResponse implements Parcelable {
             }
         };
 
+        /**
+         * @return
+         * Método para obtener el valor de aggregateRating*/
         public double getAggregateRating() {
             return aggregateRating;
         }
 
+        /**
+         * @param aggregateRating
+         * Método para establecer el valor de aggregateRating*/
         public void setAggregateRating(double aggregateRating) {
             this.aggregateRating = aggregateRating;
         }
@@ -360,10 +425,16 @@ public class MovieOverviewResponse implements Parcelable {
             }
         };
 
+        /**
+         * @return
+         * Método para obtener el valor de plainText*/
         public PlotText getPlotText() {
             return plotText;
         }
 
+        /**
+         * @param plotText
+         * Método para establecer el valor de plainText*/
         public void setPlotText(PlotText plotText) {
             this.plotText = plotText;
         }
@@ -401,10 +472,16 @@ public class MovieOverviewResponse implements Parcelable {
             }
         };
 
+        /**
+         * @return
+         * Método para obtener el valor de plainText*/
         public String getPlainText() {
             return plainText;
         }
 
+        /**
+         * @param plainText
+         * Método para establecer el valor de plainText*/
         public void setPlainText(String plainText) {
             this.plainText = plainText;
         }
@@ -414,6 +491,10 @@ public class MovieOverviewResponse implements Parcelable {
             return 0;
         }
 
+        /**
+         * @param flags
+         * @param dest
+         * Método para poder escribir el plainText siendo parcelable*/
         @Override
         public void writeToParcel(Parcel dest, int flags) {
             dest.writeString(plainText);

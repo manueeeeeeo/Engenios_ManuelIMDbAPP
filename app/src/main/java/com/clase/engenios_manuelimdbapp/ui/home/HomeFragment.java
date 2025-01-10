@@ -18,7 +18,6 @@ import com.clase.engenios_manuelimdbapp.databinding.FragmentHomeBinding;
 import com.clase.engenios_manuelimdbapp.models.Movie;
 import com.clase.engenios_manuelimdbapp.models.MovieOverviewResponse;
 import com.clase.engenios_manuelimdbapp.models.PopularMovieResponse;
-import com.google.gson.Gson;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -43,7 +42,7 @@ public class HomeFragment extends Fragment {
     private MovieAdapters adapter; // Variable que hace referencia al adaptador para el recycler de las películas
     private List<Movie> movieList = new ArrayList<>(); // Variable inicializada de la lista de películas
     private IMDBApiService imdbApiService; // Variable para poder usar la interfaz y los métodos de la API
-    private int successfulResponses = 0; // Variable para contar si todo se ha cargado correctamente
+    private int respuestasCorrectas = 0; // Variable para contar si todo se ha cargado correctamente
     private Toast mensajeToast = null; // Variable para controlar los Toast de este fragmento
 
     public View onCreateView(@NonNull LayoutInflater inflater,
@@ -51,7 +50,7 @@ public class HomeFragment extends Fragment {
         binding = FragmentHomeBinding.inflate(inflater, container, false);
         View root = binding.getRoot();
 
-        // Limpio la lista
+        // Limpio la lista de películas al iniciar el HomeFragment para evitar posibles errores y duplicaciones
         movieList.clear();
 
         // Obtengo el reyclerView
@@ -207,7 +206,7 @@ public class HomeFragment extends Fragment {
         // Compruebo si el index que le pasamos es superior a la longitud de la lista de películas
         if (index >= movies.size()) {
             // Cuando todas las películas han sido creadas y obtenidos todos sus datos
-            checkAllDetailsLoaded(movies.size());
+            comprobarSiEstanDetalles(movies.size());
             // Devuelvo y finalizo el método
             return;
         }
@@ -230,7 +229,11 @@ public class HomeFragment extends Fragment {
             public void onResponse(Call<MovieOverviewResponse> call, Response<MovieOverviewResponse> response) {
                 // Compruebo que la respuesta sea satisfactoria y el cuerpo no sea nulo
                 if (response.isSuccessful() && response.body() != null) { // Si todo ha salido bien
-                    // Creo una variable de tipo string en donde guardaré el valor de la key especial para la descripción
+                    // Creo una variable de tipo string en donde guardaré el valor de la key especial para la descripción,
+                    // como tal lo que estoy haciendo es ir accediendo a todas las keys del JSON y compruebo si son nulas
+                    // debido a que por ejemplo no existan o algun otro error, y en caso de que todas las keys tengan algo
+                    // en su interior lo que hago es acceder al cuerpo, data, title, plot, plotText y plainText, que es por así
+                    // decirlo la ruta para poder acceder al valor de la descripción de la película o serie
                     String plotText = response.body().getData().getTitle().getPlot() != null &&
                             response.body().getData().getTitle().getPlot().getPlotText() != null
                             ? response.body().getData().getTitle().getPlot().getPlotText().getPlainText()
@@ -239,7 +242,7 @@ public class HomeFragment extends Fragment {
                     movie.setDescripcion(plotText);
 
                     // Obtengo la valoración de la película comprobando las key y que no sean nulas, guardando
-                    // todo en una variable de tipo double
+                    // todo en una variable de tipo double, aquí pasa lo mismo que con la descripción
                     double rating = response.body().getData().getTitle().getRatingsSummary() != null
                             ? response.body().getData().getTitle().getRatingsSummary().getAggregateRating()
                             : 0.0;
@@ -255,7 +258,7 @@ public class HomeFragment extends Fragment {
                     }
 
                     // Sumo uno a la variable para contabilizar las respuestas realizadas y obtenidas
-                    successfulResponses++;
+                    respuestasCorrectas++;
                 } else { // En caso de que la respuesta no sea satisfactoria o el cuerpo sea nulo
                     // Muestro por el LogCat el error al cargar el id de las películas
                     Log.e("API_FAILURE", "Error al cargar los detalles de la película: " + movie.getId());
@@ -285,9 +288,9 @@ public class HomeFragment extends Fragment {
      * @param totalMovies
      * Método en el que le paso como parametro un entero que representa
      * el número total de películas o series que se tienen que haber cargado*/
-    private void checkAllDetailsLoaded(int totalMovies) {
+    private void comprobarSiEstanDetalles(int totalMovies) {
         // Verifico si ya se han procesado todas las películas y he obetenido todos sus datos
-        if (successfulResponses == totalMovies) {
+        if (respuestasCorrectas == totalMovies) {
             // Lanzo un Toast al usuario avisandole de que ya se ha cargado todo correctamente
             showToast("Top 10 cargado correctamente!!");
         }
