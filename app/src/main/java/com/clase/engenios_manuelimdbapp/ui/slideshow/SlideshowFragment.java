@@ -69,6 +69,7 @@ public class SlideshowFragment extends Fragment {
 
         // Obtengo de la interfaz todos los componentes visuales necesarios
         busqueda = (EditText) binding.editFechaPeli;
+        busqueda.setText("");
         botonBuscar = (Button) binding.btnBuscarPeli;
         spinnerGenero = (Spinner) binding.spinnerCategorias;
         recy = (RecyclerView) binding.recy2;

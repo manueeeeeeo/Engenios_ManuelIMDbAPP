@@ -38,12 +38,13 @@ import retrofit2.converter.gson.GsonConverterFactory;
 public class HomeFragment extends Fragment {
 
     private FragmentHomeBinding binding;
-    private RecyclerView recyclerView; // Variable que nos permite manejar el RecyclerView de la interfaz
-    private MovieAdapters adapter; // Variable que hace referencia al adaptador para el recycler de las películas
+    private RecyclerView recyclerView = null; // Variable que nos permite manejar el RecyclerView de la interfaz
+    private MovieAdapters adapter = null; // Variable que hace referencia al adaptador para el recycler de las películas
     private List<Movie> movieList = new ArrayList<>(); // Variable inicializada de la lista de películas
-    private IMDBApiService imdbApiService; // Variable para poder usar la interfaz y los métodos de la API
+    private IMDBApiService imdbApiService = null; // Variable para poder usar la interfaz y los métodos de la API
     private int respuestasCorrectas = 0; // Variable para contar si todo se ha cargado correctamente
     private Toast mensajeToast = null; // Variable para controlar los Toast de este fragmento
+    private List<Call<?>> activeCalls = new ArrayList<>(); // Variable para poder manejar el estado de las llamadas en este fragmento
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
@@ -115,6 +116,8 @@ public class HomeFragment extends Fragment {
         // Creo un objeto de tipo llamada a la API indicando el método con el que vamos a enlazar el endpoint y le indicamos que lo
         // obtenemos en inglés con el parametro US
         Call<PopularMovieResponse> call = imdbApiService.getTopMeterTitles("US");
+        // Agrego la llamada a la lista de llamadas por si es necesario cancelarla al cambiar de fragmento
+        activeCalls.add(call);
         // Procedemos a ejecutar la llamada anterior
         call.enqueue(new Callback<PopularMovieResponse>() {
             /**
@@ -216,6 +219,8 @@ public class HomeFragment extends Fragment {
         // Configuro la llamada a la API utilziando la interfaz de imdbApiService y con el método en donde obtengo los datos de una
         // película o serie pasandole como parametro el id de la película
         Call<MovieOverviewResponse> call = imdbApiService.getMovieOverview(movie.getId());
+        // Agrego la llamada a la lista de llamadas por si es necesario cancelarla al cambiar de fragmento
+        activeCalls.add(call);
         call.enqueue(new Callback<MovieOverviewResponse>() {
             /**
              * @param call
@@ -296,10 +301,27 @@ public class HomeFragment extends Fragment {
         }
     }
 
+    /**
+     * Con este método onDestroyView lo que estoy haciendo
+     * esque cada vez que se destruya el fragmento de HomeFragment
+     * se cancelen todas las llamadas, es decir, si por ejemplo yo que cargo todos los datos
+     * de las películas con un método recurisvo, no ha terminado y me voy a otro fragmento,
+     * que se paré la consulta, ya que sino seguiria obteniendo cosas de la api, es para
+     * hacer la aplicación más robusta y para no tener llamadas a las APIs por detras*/
     @Override
     public void onDestroyView() {
         super.onDestroyView();
         binding = null;
+
+        // Utilizo un foreach para ir una a una todas las llamadas de la lista irlas cancelando
+        for (Call<?> call : activeCalls) {
+            if (!call.isCanceled()) { // Compruebo si está cancelada ya, en caso de no estar cancelada
+                // La cancelo
+                call.cancel();
+            }
+        }
+        // Limpio la lista de llamadas a la API
+        activeCalls.clear();
     }
 
     /**

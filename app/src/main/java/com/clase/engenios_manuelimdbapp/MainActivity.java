@@ -39,12 +39,13 @@ public class MainActivity extends AppCompatActivity {
     private Button botonCerrarSesion = null; // Variable para poder cerrar la sesión
     private String nombre = null; // Variable donde cargaré el nombre de usuario
     private String correo = null; // Variable donde cargaré le email de usuario
-    private String urlPerfil = null; // Variable donde cargaré la url de la foto de perfil de usuario
+    private String imagenUrl = null; // Variable donde cargaré la url de la foto de perfil de usuario
     private String uIdUsuario = null; // Variable para cargar y manejar el uid del usuario
     private SharedPreferences sharedPreferences = null; // Variable para manejar las preferencias del usuario y guardar posibles datos
     private TextView infoCorreo = null; // Variable para manejar el textview del correo del usuario
     private TextView infoNombre = null; // Variables para manejar el textview del nombre del usuario
     private ImageView infoUrlFoto = null; // Variable para manejar la imageview de la foto de perfil del usuario
+    private String email = null; // Variable para manejar el email que obtenemos del anterior Intent
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -57,18 +58,15 @@ public class MainActivity extends AppCompatActivity {
         sharedPreferences = getSharedPreferences("MyPrefs", Context.MODE_PRIVATE);
         // Cargo en la variable que he creado el email del usuario y en caso de que no exista ningun registro ponemos el valor de nada
         correo = sharedPreferences.getString("emailUsuario", "nada");
-        // Cargo en la variable que he creado el uId del usuario y en caso de que no exista ningun registro ponemos el valor de nada
-        uIdUsuario = sharedPreferences.getString("uIDUsuario", "nada");
 
         // Creo un intent que lo que hace es obtener lo que le enviamos desde el login (siempre ha de recibir algo)
         Intent intent = getIntent();
         // Creamos una variable de tipo nombre donde cargamos el nombre del usuario
-        String name = intent.getStringExtra("name");
+        nombre = intent.getStringExtra("name");
         // Creamos una variable de tipo email donde cargamos el email del usuario
-        String email = intent.getStringExtra("email");
+        email = intent.getStringExtra("email");
         // Creamos una variable de tipo url de la foto de perfil donde cargamos la url del usuario
-        String photoUrl = intent.getStringExtra("photoUrl");
-        uIdUsuario = intent.getStringExtra("idUsuario");
+        imagenUrl = intent.getStringExtra("photoUrl");
 
         // Compruebo la variable y lo que tengo guardo en el sharedPreferences
         if(correo.equals("nada")){ // En caso de que el correo sea igual a nada
@@ -82,22 +80,6 @@ public class MainActivity extends AppCompatActivity {
                 // Guardo el nuevo email en las preferencias y confirmo los cambios
                 SharedPreferences.Editor editor = sharedPreferences.edit();
                 editor.putString("emailUsuario", email);
-                editor.apply();
-            }
-        }
-
-        // Compruebo la variable y lo que tengo guardo en el sharedPreferences
-        if(uIdUsuario.equals("nada")){ // En caso de que el correo sea igual a nada
-            // Guardo y confirmo los cambios respecto al valor del email en preferencias
-            SharedPreferences.Editor editor = sharedPreferences.edit();
-            editor.putString("uIDUsuario", email);
-            editor.apply();
-        }else{ // Si el correo es distinto de nada
-            // Compruebo si es el mismo email o no
-            if(!uIdUsuario.equals(email)){ // En caso de que sea otro email diferente
-                // Guardo el nuevo email en las preferencias y confirmo los cambios
-                SharedPreferences.Editor editor = sharedPreferences.edit();
-                editor.putString("uIDUsuario", email);
                 editor.apply();
             }
         }
@@ -118,8 +100,8 @@ public class MainActivity extends AppCompatActivity {
         infoCorreo = headerView.findViewById(R.id.txtCorreo);
         infoUrlFoto = headerView.findViewById(R.id.imageUser);
 
-        Button cerrarSesion = (Button) headerView.findViewById(R.id.btnLogout);
-        cerrarSesion.setOnClickListener(new View.OnClickListener() {
+        botonCerrarSesion = (Button) headerView.findViewById(R.id.btnLogout);
+        botonCerrarSesion.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 signOut();
@@ -127,14 +109,14 @@ public class MainActivity extends AppCompatActivity {
         });
 
         // Establezco al TextView del nombre de usuario el valor del nombre
-        infoNombre.setText(name);
+        infoNombre.setText(nombre);
         // Establezco al TextView del email de usuario el valor del email
         infoCorreo.setText(email);
 
         // Comprobamos que dentro de la variable que contiene la url de la foto de perfil haya algo
-        if (photoUrl != null && !photoUrl.isEmpty()) {
+        if (imagenUrl != null && !imagenUrl.isEmpty()) {
             // En caso afirmativo, procedo a cargar con la libreria Picasso la imagen
-            Picasso.get().load(photoUrl).into(infoUrlFoto);
+            Picasso.get().load(imagenUrl).into(infoUrlFoto);
         }
 
         // Configurar el NavigationController
