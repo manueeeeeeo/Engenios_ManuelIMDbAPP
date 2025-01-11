@@ -72,7 +72,7 @@ public class HomeFragment extends Fragment {
                     // Creamos una nueva solicitud basandonos en la original
                     Request newRequest = chain.request().newBuilder()
                             // Establecemos un encabezado con el token para acceder a la conexión segura
-                            .addHeader("X-RapidAPI-Key", "4df2589b02mshc86c44d47f1656cp147b6djsnc4e6087af463")
+                            .addHeader("X-RapidAPI-Key", "2d4355b846mshc466fa63c246723p12a355jsnc0a3ef230019")
                             // Establecemos un encabezado con el host al que vamos a solicitar conectarnos
                             .addHeader("X-RapidAPI-Host", "imdb-com.p.rapidapi.com")
                             .build(); // Confirmamos las configuraciones de la conexión
