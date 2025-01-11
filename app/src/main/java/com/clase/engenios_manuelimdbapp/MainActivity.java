@@ -1,6 +1,8 @@
 package com.clase.engenios_manuelimdbapp;
 
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.View;
 import android.view.Menu;
@@ -24,59 +26,97 @@ import com.clase.engenios_manuelimdbapp.databinding.ActivityMainBinding;
 import com.google.firebase.auth.FirebaseAuth;
 import com.squareup.picasso.Picasso;
 
+/**
+ * @author Manuel
+ * @version 1.0*/
+
 public class MainActivity extends AppCompatActivity {
 
     private AppBarConfiguration mAppBarConfiguration;
     private ActivityMainBinding binding;
     private NavigationView navigationView;
-    private FirebaseAuth auth=null;
+    private FirebaseAuth auth=null; // Variable para manejar la autentificación con Firebase
+    private Button botonCerrarSesion = null; // Variable para poder cerrar la sesión
+    private String nombre = null; // Variable donde cargaré el nombre de usuario
+    private String correo = null; // Variable donde cargaré le email de usuario
+    private String imagenUrl = null; // Variable donde cargaré la url de la foto de perfil de usuario
+    private String uIdUsuario = null; // Variable para cargar y manejar el uid del usuario
+    private SharedPreferences sharedPreferences = null; // Variable para manejar las preferencias del usuario y guardar posibles datos
+    private TextView infoCorreo = null; // Variable para manejar el textview del correo del usuario
+    private TextView infoNombre = null; // Variables para manejar el textview del nombre del usuario
+    private ImageView infoUrlFoto = null; // Variable para manejar la imageview de la foto de perfil del usuario
+    private String email = null; // Variable para manejar el email que obtenemos del anterior Intent
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // Inicializar FirebaseAuth
+        // Obtengo la instancia de la autentificación de firebase
         auth = FirebaseAuth.getInstance();
 
+        // Obtengo las preferencias del usuario
+        sharedPreferences = getSharedPreferences("MyPrefs", Context.MODE_PRIVATE);
+        // Cargo en la variable que he creado el email del usuario y en caso de que no exista ningun registro ponemos el valor de nada
+        correo = sharedPreferences.getString("emailUsuario", "nada");
+
+        // Creo un intent que lo que hace es obtener lo que le enviamos desde el login (siempre ha de recibir algo)
         Intent intent = getIntent();
-        String name = intent.getStringExtra("name");
-        String email = intent.getStringExtra("email");
-        String photoUrl = intent.getStringExtra("photoUrl");
+        // Creamos una variable de tipo nombre donde cargamos el nombre del usuario
+        nombre = intent.getStringExtra("name");
+        // Creamos una variable de tipo email donde cargamos el email del usuario
+        email = intent.getStringExtra("email");
+        // Creamos una variable de tipo url de la foto de perfil donde cargamos la url del usuario
+        imagenUrl = intent.getStringExtra("photoUrl");
+
+        // Compruebo la variable y lo que tengo guardo en el sharedPreferences
+        if(correo.equals("nada")){ // En caso de que el correo sea igual a nada
+            // Guardo y confirmo los cambios respecto al valor del email en preferencias
+            SharedPreferences.Editor editor = sharedPreferences.edit();
+            editor.putString("emailUsuario", email);
+            editor.apply();
+        }else{ // Si el correo es distinto de nada
+            // Compruebo si es el mismo email o no
+            if(!correo.equals(email)){ // En caso de que sea otro email diferente
+                // Guardo el nuevo email en las preferencias y confirmo los cambios
+                SharedPreferences.Editor editor = sharedPreferences.edit();
+                editor.putString("emailUsuario", email);
+                editor.apply();
+            }
+        }
 
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
         setSupportActionBar(binding.appBarMain.toolbar);
-        binding.appBarMain.fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null)
-                        .setAnchorView(R.id.fab).show();
-            }
-        });
 
         DrawerLayout drawer = binding.drawerLayout;
         navigationView = binding.navView;
 
+        // Obtengo la vista
         View headerView = navigationView.getHeaderView(0);
-        TextView userNameTextView = headerView.findViewById(R.id.txtUser);
-        TextView userEmailTextView = headerView.findViewById(R.id.txtCorreo);
-        ImageView userPhotoImageView = headerView.findViewById(R.id.imageUser);
 
-        Button cerrarSesion = (Button) headerView.findViewById(R.id.btnLogout);
-        cerrarSesion.setOnClickListener(new View.OnClickListener() {
+        // Y procedo a obtener todos los componenes necesarios para poder interactuar con la interfaz
+        infoNombre = headerView.findViewById(R.id.txtUser);
+        infoCorreo = headerView.findViewById(R.id.txtCorreo);
+        infoUrlFoto = headerView.findViewById(R.id.imageUser);
+
+        botonCerrarSesion = (Button) headerView.findViewById(R.id.btnLogout);
+        botonCerrarSesion.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 signOut();
             }
         });
 
-        userNameTextView.setText(name);
-        userEmailTextView.setText(email);
+        // Establezco al TextView del nombre de usuario el valor del nombre
+        infoNombre.setText(nombre);
+        // Establezco al TextView del email de usuario el valor del email
+        infoCorreo.setText(email);
 
-        if (photoUrl != null && !photoUrl.isEmpty()) {
-            Picasso.get().load(photoUrl).into(userPhotoImageView);
+        // Comprobamos que dentro de la variable que contiene la url de la foto de perfil haya algo
+        if (imagenUrl != null && !imagenUrl.isEmpty()) {
+            // En caso afirmativo, procedo a cargar con la libreria Picasso la imagen
+            Picasso.get().load(imagenUrl).into(infoUrlFoto);
         }
 
         // Configurar el NavigationController
@@ -96,14 +136,22 @@ public class MainActivity extends AppCompatActivity {
         return true;
     }
 
-    // Método para cerrar sesión
+    /**
+     * Método para cerrar la sesión de manera definitiva en la app, usamos este método para que cuando cerremos
+     * la sesión y volvamos a la actividad de Login aunque volvamos a pulsar el botón de iniciar con Google,
+     * que nos vuelva a dejar elegir la cuenta de Google con la que queremos iniciar sesión*/
     private void signOut() {
+        // Utilizamos el submetodo de auth firebase para cerrar la sesión
         auth.signOut();
 
+        // Establecemos que el cliente del objeto de GoogleSingIn también cierre la sesión
         GoogleSignIn.getClient(this, GoogleSignInOptions.DEFAULT_SIGN_IN).signOut();
 
+        // Creamos un nuevo Intent para redirigir el usuario a la actividad de Inicio
         Intent intent = new Intent(MainActivity.this, Inicio.class);
+        // Iniciamos el intent, iniciando así la nueva actividad
         startActivity(intent);
+        // Finalizamos la actividad actual
         finish();
     }
 
