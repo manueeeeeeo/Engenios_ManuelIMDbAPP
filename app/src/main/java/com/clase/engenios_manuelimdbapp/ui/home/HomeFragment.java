@@ -20,9 +20,7 @@ import com.clase.engenios_manuelimdbapp.models.MovieOverviewResponse;
 import com.clase.engenios_manuelimdbapp.models.PopularMovieResponse;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import okhttp3.OkHttpClient;
@@ -46,6 +44,7 @@ public class HomeFragment extends Fragment {
     private IMDBApiService imdbApiService; // Variable para poder usar la interfaz y los métodos de la API
     private int respuestasCorrectas = 0; // Variable para contar si todo se ha cargado correctamente
     private Toast mensajeToast = null; // Variable para controlar los Toast de este fragmento
+    private final List<Call<?>> llamadasActivas = new ArrayList<>(); // Variable con la lista de llamadas para cancelarlas en caso de ser necesario
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
@@ -119,6 +118,8 @@ public class HomeFragment extends Fragment {
         // Creo un objeto de tipo llamada a la API indicando el método con el que vamos a enlazar el endpoint y le indicamos que lo
         // obtenemos en inglés con el parametro US
         Call<PopularMovieResponse> call = imdbApiService.getTopMeterTitles("US");
+        // Agrego la llamada a la API a la lista
+        llamadasActivas.add(call);
         // Procedemos a ejecutar la llamada anterior
         call.enqueue(new Callback<PopularMovieResponse>() {
             /**
@@ -127,6 +128,12 @@ public class HomeFragment extends Fragment {
              * Método onResponse que se ejecuta cuando */
             @Override
             public void onResponse(Call<PopularMovieResponse> call, Response<PopularMovieResponse> response) {
+                // Como ya se ha obtenido algo de la llamada la elimino de la lista
+                llamadasActivas.remove(call);
+                // Compruebo si el fragmento actual sigue en el top 10 o no para saber si sigo cargando cosas o no
+                if (!isAdded()) { // En caso de que el HomeFragment ya no este adjunto no hacemos nada
+                    return;
+                }
                 // Compruebo que la respuesta sea satisfactoria y el cuerpo de la misma no sea nulo
                 if (response.isSuccessful() && response.body() != null) {
                     // Creo una lista de objetos de tipo PopularMovie junto con Edge y obtengo de la llamada a la api
@@ -189,6 +196,12 @@ public class HomeFragment extends Fragment {
              * el mensaje del propio error*/
             @Override
             public void onFailure(Call<PopularMovieResponse> call, Throwable t) {
+                // Como ya hemos obtenido algo de la llamada a la API elimino la llamada de la lista
+                llamadasActivas.remove(call);
+                // Compruebo si el fragmento actual sigue en el top 10 o no para saber si sigo cargando cosas o no
+                if (!isAdded()) { // En caso de que el HomeFragment ya no este adjunto no hacemos nada
+                    return;
+                }
                 // Llamo de manera recursiva al mismo método con la siguiente película
                 Log.e("HomeFragment", "Error en la llamada API: "+t.getMessage());
             }
@@ -220,6 +233,8 @@ public class HomeFragment extends Fragment {
         // Configuro la llamada a la API utilziando la interfaz de imdbApiService y con el método en donde obtengo los datos de una
         // película o serie pasandole como parametro el id de la película
         Call<MovieOverviewResponse> call = imdbApiService.getMovieOverview(movie.getId());
+        // Agrego la llamada a la API a la lista
+        llamadasActivas.add(call);
         call.enqueue(new Callback<MovieOverviewResponse>() {
             /**
              * @param call
@@ -231,6 +246,12 @@ public class HomeFragment extends Fragment {
              * correctamente*/
             @Override
             public void onResponse(Call<MovieOverviewResponse> call, Response<MovieOverviewResponse> response) {
+                // Como ya hemos obtenido algo de la llamada, elimino la llamada de la lista
+                llamadasActivas.remove(call);
+                // Compruebo si el fragmento actual sigue en el top 10 o no para saber si sigo cargando cosas o no
+                if (!isAdded()) { // En caso de que el HomeFragment ya no este adjunto no hacemos nada
+                    return;
+                }
                 // Compruebo que la respuesta sea satisfactoria y el cuerpo no sea nulo
                 if (response.isSuccessful() && response.body() != null) { // Si todo ha salido bien
                     // Creo una variable de tipo string en donde guardaré el valor de la key especial para la descripción,
@@ -280,6 +301,12 @@ public class HomeFragment extends Fragment {
              * el mensaje del propio error*/
             @Override
             public void onFailure(Call<MovieOverviewResponse> call, Throwable t) {
+                // Como ya hemos obtenido algo de la llamada elimino la llamada de la lista
+                llamadasActivas.remove(call);
+                // Compruebo si el fragmento actual sigue en el top 10 o no para saber si sigo cargando cosas o no
+                if (!isAdded()) { // En caso de que el HomeFragment ya no este adjunto no hacemos nada
+                    return;
+                }
                 Log.e("API_FAILURE", "Error en la llamada API: " + t.getMessage());
                 Log.e("API_FAILURE", "Entrando al método de volver a intentar");
                 // Llamo de manera recursiva al mismo método con la siguiente película
@@ -323,14 +350,39 @@ public class HomeFragment extends Fragment {
         }
     }
 
+    /**
+     * En el método on DestroyView lo que esto haciendo es
+     * aparte de limpiar todos los componentes, recorro la lista
+     * de llamadas y en caso de que haya alguna activa, la cancelo
+     * para que no de problemas al cambiar de fragmento*/
     @Override
     public void onDestroyView() {
         super.onDestroyView();
         binding = null;
 
-        // Limpio el RecyclerView y el Adapter
+        // Mediante un foreach en caso de que alguna de las llamadas de la lista este activa la elimmino
+        for (Call<?> call : llamadasActivas) {
+            // Compruebo si no está cancelada
+            if (!call.isCanceled()) { // Si no está cancelada
+                // La cancelo
+                call.cancel();
+            }
+        }
+        // Limpio la lista de llamadas
+        llamadasActivas.clear();
+
+        // Limpio el RecyclerView
         recyclerView = null;
+        // Limpio el adaptador
         adapter = null;
+
+        // Compruebo si existen mensajes a mostrar
+        if (mensajeToast != null) { // En caso de que si que haya
+            // Los cancelo
+            mensajeToast.cancel();
+            // Y pongo nulo a la variable para mostrarlos
+            mensajeToast = null;
+        }
     }
 
     /**

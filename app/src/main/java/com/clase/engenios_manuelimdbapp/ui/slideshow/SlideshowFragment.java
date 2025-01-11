@@ -173,6 +173,9 @@ public class SlideshowFragment extends Fragment {
                 // Obtengo el id del género que he elegido en el spinner
                 String genreId = genreMap.get(selectedGenre);
 
+                // Limpio el EditText del año
+                busqueda.setText("");
+
                 // Creo el Intent para pasar a la siguiente actividad
                 Intent in = new Intent(getContext(), MovieListActivity.class);
                 // Le paso como parametros dos objetos
