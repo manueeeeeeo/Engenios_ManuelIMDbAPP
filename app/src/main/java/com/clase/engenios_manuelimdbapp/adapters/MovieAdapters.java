@@ -74,7 +74,7 @@ public class MovieAdapters extends RecyclerView.Adapter<MovieAdapters.MovieViewH
             public void onClick(View view) {
                 // Creo un nuevo objeto en donde le igualo a la pelicula que obtengo del adaptador
                 Movie movieDetail = movie;
-                // UTILIZO EL LOG PARA PODER IR DEPURANDO Y QUE TODO VA BIEN
+                // UTILIZO EL LOG PARA PODER IR DEPURANDO Y VER QUE TODO VA BIEN
                 // Muestro el título de la película por el log
                 Log.d("MovieAdapter", "Title: " + movie.getTitle());
                 // Muestro la url de la imagen de portada de la película por el log

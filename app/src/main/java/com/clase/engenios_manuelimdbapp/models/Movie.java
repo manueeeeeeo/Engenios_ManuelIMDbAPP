@@ -132,18 +132,30 @@ public class Movie implements Parcelable {
         this.releaseDate = releaseDate;
     }
 
+    /**
+     * @return
+     * Método para obtener la descripción*/
     public String getDescripcion() {
         return descripcion;
     }
 
+    /**
+     * @param descripcion
+     * Método para establecer el valor de la descripción*/
     public void setDescripcion(String descripcion) {
         this.descripcion = descripcion;
     }
 
+    /**
+     * @return
+     * Método para obtener el valor de la valoración*/
     public String getValoracion() {
         return valoracion;
     }
 
+    /**
+     * @param valoracion
+     * Método para establecer el valor de la valoración*/
     public void setValoracion(String valoracion) {
         this.valoracion = valoracion;
     }
